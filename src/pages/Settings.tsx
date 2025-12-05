@@ -2,7 +2,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/hooks/useAuth';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { User, Mail, Palette } from 'lucide-react';
+import { User, Mail, Palette, FolderTree, Tags } from 'lucide-react';
+import { CategoryManager } from '@/components/categories/CategoryManager';
+import { TagManager } from '@/components/tags/TagManager';
 
 export default function Settings() {
   const { user } = useAuth();
@@ -46,6 +48,32 @@ export default function Settings() {
               placeholder="设置你的昵称"
             />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-2">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FolderTree className="h-5 w-5 text-primary" />
+            分类管理
+          </CardTitle>
+          <CardDescription>创建和管理资料分类文件夹</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CategoryManager />
+        </CardContent>
+      </Card>
+
+      <Card className="border-2">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Tags className="h-5 w-5 text-secondary" />
+            标签管理
+          </CardTitle>
+          <CardDescription>创建和管理资料标签</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <TagManager />
         </CardContent>
       </Card>
 
