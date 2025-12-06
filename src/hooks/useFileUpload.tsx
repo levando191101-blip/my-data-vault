@@ -10,6 +10,11 @@ export interface UploadingFile {
   error?: string;
 }
 
+export interface UploadOptions {
+  categoryId?: string | null;
+  tagIds?: string[];
+}
+
 export function useFileUpload() {
   const { user } = useAuth();
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
@@ -30,7 +35,7 @@ export function useFileUpload() {
     return 'other';
   };
 
-  const uploadFile = useCallback(async (file: File): Promise<boolean> => {
+  const uploadFile = useCallback(async (file: File, options?: UploadOptions): Promise<boolean> => {
     if (!user) return false;
 
     const fileId = crypto.randomUUID();
@@ -55,10 +60,10 @@ export function useFileUpload() {
 
       if (uploadError) throw uploadError;
 
-      updateFileProgress(fileId, { progress: 80 });
+      updateFileProgress(fileId, { progress: 70 });
 
       // Save metadata to database
-      const { error: dbError } = await supabase
+      const { data: materialData, error: dbError } = await supabase
         .from('materials')
         .insert({
           user_id: user.id,
@@ -67,10 +72,31 @@ export function useFileUpload() {
           file_type: getFileType(file.type),
           file_size: file.size,
           file_path: filePath,
-          mime_type: file.type
-        });
+          mime_type: file.type,
+          category_id: options?.categoryId || null
+        })
+        .select('id')
+        .single();
 
       if (dbError) throw dbError;
+
+      updateFileProgress(fileId, { progress: 85 });
+
+      // Add tags if provided
+      if (options?.tagIds && options.tagIds.length > 0 && materialData) {
+        const tagInserts = options.tagIds.map(tagId => ({
+          material_id: materialData.id,
+          tag_id: tagId
+        }));
+
+        const { error: tagsError } = await supabase
+          .from('material_tags')
+          .insert(tagInserts);
+
+        if (tagsError) {
+          console.error('Failed to add tags:', tagsError);
+        }
+      }
 
       updateFileProgress(fileId, { progress: 100, status: 'completed' });
       return true;
@@ -83,8 +109,8 @@ export function useFileUpload() {
     }
   }, [user, updateFileProgress]);
 
-  const uploadFiles = useCallback(async (files: File[]) => {
-    const results = await Promise.all(files.map(uploadFile));
+  const uploadFiles = useCallback(async (files: File[], options?: UploadOptions) => {
+    const results = await Promise.all(files.map(file => uploadFile(file, options)));
     return results.every(Boolean);
   }, [uploadFile]);
 
