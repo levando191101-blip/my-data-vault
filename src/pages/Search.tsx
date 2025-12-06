@@ -2,8 +2,9 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Search as SearchIcon } from 'lucide-react';
-import { useMaterials } from '@/hooks/useMaterials';
+import { useMaterials, Material } from '@/hooks/useMaterials';
 import { MaterialCard } from '@/components/materials/MaterialCard';
+import { MaterialEditDialog } from '@/components/materials/MaterialEditDialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,7 +19,8 @@ import {
 export default function Search() {
   const [searchQuery, setSearchQuery] = useState('');
   const [deleteId, setDeleteId] = useState<{ id: string; filePath: string } | null>(null);
-  const { materials, loading, deleteMaterial } = useMaterials();
+  const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
+  const { materials, loading, deleteMaterial, updateMaterial } = useMaterials();
 
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
@@ -95,11 +97,19 @@ export default function Search() {
                 key={material.id}
                 material={material}
                 onDelete={(id, filePath) => setDeleteId({ id, filePath })}
+                onEdit={setEditingMaterial}
               />
             ))}
           </div>
         </div>
       )}
+
+      <MaterialEditDialog
+        material={editingMaterial}
+        open={!!editingMaterial}
+        onOpenChange={(open) => !open && setEditingMaterial(null)}
+        onSave={updateMaterial}
+      />
 
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>

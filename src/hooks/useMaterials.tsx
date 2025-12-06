@@ -110,6 +110,55 @@ export function useMaterials() {
     return true;
   };
 
+  const updateMaterial = async (
+    id: string, 
+    data: { title: string; categoryId: string | null; tagIds: string[] }
+  ) => {
+    // Update material info
+    const { error: updateError } = await supabase
+      .from("materials")
+      .update({
+        title: data.title,
+        category_id: data.categoryId
+      })
+      .eq("id", id);
+
+    if (updateError) {
+      toast({
+        title: "更新失败",
+        description: updateError.message,
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Delete existing tags
+    await supabase
+      .from("material_tags")
+      .delete()
+      .eq("material_id", id);
+
+    // Insert new tags
+    if (data.tagIds.length > 0) {
+      const tagInserts = data.tagIds.map(tagId => ({
+        material_id: id,
+        tag_id: tagId
+      }));
+
+      const { error: tagsError } = await supabase
+        .from("material_tags")
+        .insert(tagInserts);
+
+      if (tagsError) {
+        console.error("Failed to update tags:", tagsError);
+      }
+    }
+
+    toast({ title: "资料已更新" });
+    await fetchMaterials();
+    return true;
+  };
+
   useEffect(() => {
     fetchMaterials();
   }, [user]);
@@ -118,6 +167,7 @@ export function useMaterials() {
     materials,
     loading,
     deleteMaterial,
+    updateMaterial,
     refetch: fetchMaterials,
   };
 }
