@@ -3,11 +3,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { FolderOpen, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { useMaterials } from "@/hooks/useMaterials";
+import { useMaterials, Material } from "@/hooks/useMaterials";
 import { useCategories } from "@/hooks/useCategories";
 import { useTags } from "@/hooks/useTags";
 import { MaterialCard } from "@/components/materials/MaterialCard";
 import { MaterialFilters } from "@/components/materials/MaterialFilters";
+import { MaterialEditDialog } from "@/components/materials/MaterialEditDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,12 +21,13 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function Materials() {
-  const { materials, loading, deleteMaterial } = useMaterials();
+  const { materials, loading, deleteMaterial, updateMaterial } = useMaterials();
   const { categories } = useCategories();
   const { tags } = useTags();
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     id: string;
@@ -138,10 +140,18 @@ export default function Materials() {
               key={material.id}
               material={material}
               onDelete={handleDeleteClick}
+              onEdit={setEditingMaterial}
             />
           ))}
         </div>
       )}
+
+      <MaterialEditDialog
+        material={editingMaterial}
+        open={!!editingMaterial}
+        onOpenChange={(open) => !open && setEditingMaterial(null)}
+        onSave={updateMaterial}
+      />
 
       <AlertDialog
         open={deleteDialog.open}
