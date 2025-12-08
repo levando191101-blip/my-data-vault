@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FileText, Image, Video, File, MoreVertical, Download, Trash2, ExternalLink, Pencil } from "lucide-react";
+import { FileText, Image, Video, File, MoreVertical, Download, Trash2, ExternalLink, Pencil, Eye } from "lucide-react";
 import { Material } from "@/hooks/useMaterials";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -15,6 +15,7 @@ interface MaterialCardProps {
   material: Material;
   onDelete: (id: string, filePath: string) => void;
   onEdit?: (material: Material) => void;
+  onPreview?: (material: Material) => void;
 }
 
 const getFileIcon = (fileType: string) => {
@@ -39,7 +40,7 @@ const formatFileSize = (bytes: number) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 };
 
-export function MaterialCard({ material, onDelete, onEdit }: MaterialCardProps) {
+export function MaterialCard({ material, onDelete, onEdit, onPreview }: MaterialCardProps) {
   const handleDownload = async () => {
     const { data } = supabase.storage
       .from("materials")
@@ -86,6 +87,12 @@ export function MaterialCard({ material, onDelete, onEdit }: MaterialCardProps) 
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  {onPreview && (material.file_type === "image" || material.file_type === "pdf" || material.mime_type === "application/pdf") && (
+                    <DropdownMenuItem onClick={() => onPreview(material)}>
+                      <Eye className="mr-2 h-4 w-4" />
+                      预览
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={handleOpen}>
                     <ExternalLink className="mr-2 h-4 w-4" />
                     打开

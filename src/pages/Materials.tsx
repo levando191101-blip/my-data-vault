@@ -9,6 +9,7 @@ import { useTags } from "@/hooks/useTags";
 import { MaterialCard } from "@/components/materials/MaterialCard";
 import { MaterialFilters } from "@/components/materials/MaterialFilters";
 import { MaterialEditDialog } from "@/components/materials/MaterialEditDialog";
+import { MaterialPreviewDialog } from "@/components/materials/MaterialPreviewDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +29,7 @@ export default function Materials() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
+  const [previewMaterial, setPreviewMaterial] = useState<Material | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     id: string;
@@ -141,6 +143,7 @@ export default function Materials() {
               material={material}
               onDelete={handleDeleteClick}
               onEdit={setEditingMaterial}
+              onPreview={setPreviewMaterial}
             />
           ))}
         </div>
@@ -151,6 +154,12 @@ export default function Materials() {
         open={!!editingMaterial}
         onOpenChange={(open) => !open && setEditingMaterial(null)}
         onSave={updateMaterial}
+      />
+
+      <MaterialPreviewDialog
+        material={previewMaterial}
+        open={!!previewMaterial}
+        onOpenChange={(open) => !open && setPreviewMaterial(null)}
       />
 
       <AlertDialog
