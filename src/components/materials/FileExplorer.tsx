@@ -738,19 +738,36 @@ function DraggableFolderCard({
 }
 
 // Drag overlay content
-function DragOverlayContent({ item, categories }: { item: DragItem | null; categories: Category[] }) {
+function DragOverlayContent({ 
+  item, 
+  categories,
+  batchCount = 0,
+}: { 
+  item: DragItem | null; 
+  categories: Category[];
+  batchCount?: number;
+}) {
   if (!item) return null;
+  
+  const showBatchBadge = batchCount > 1;
   
   if (item.type === "folder") {
     const category = categories.find(c => c.id === item.id);
     if (!category) return null;
     return (
-      <Card className="w-48 shadow-xl rotate-2 bg-background">
-        <CardContent className="p-3 flex items-center gap-2">
-          <Folder className="h-5 w-5 text-primary" />
-          <span className="font-medium truncate">{category.name}</span>
-        </CardContent>
-      </Card>
+      <div className="relative">
+        <Card className="w-48 shadow-xl rotate-2 bg-background">
+          <CardContent className="p-3 flex items-center gap-2">
+            <Folder className="h-5 w-5 text-primary" />
+            <span className="font-medium truncate">{category.name}</span>
+          </CardContent>
+        </Card>
+        {showBatchBadge && (
+          <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-lg">
+            {batchCount}
+          </div>
+        )}
+      </div>
     );
   }
   
@@ -758,12 +775,19 @@ function DragOverlayContent({ item, categories }: { item: DragItem | null; categ
   if (!material) return null;
   
   return (
-    <Card className="w-64 shadow-xl rotate-3 bg-background">
-      <CardContent className="p-3">
-        <p className="font-medium truncate">{material.title}</p>
-        <p className="text-xs text-muted-foreground truncate">{material.file_name}</p>
-      </CardContent>
-    </Card>
+    <div className="relative">
+      <Card className="w-64 shadow-xl rotate-3 bg-background">
+        <CardContent className="p-3">
+          <p className="font-medium truncate">{material.title}</p>
+          <p className="text-xs text-muted-foreground truncate">{material.file_name}</p>
+        </CardContent>
+      </Card>
+      {showBatchBadge && (
+        <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-lg">
+          {batchCount}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -787,6 +811,7 @@ export function FileExplorer({
   const [currentCategory, setCurrentCategory] = useState<string | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [activeItem, setActiveItem] = useState<DragItem | null>(null);
+  const [batchDragCount, setBatchDragCount] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
 
   // Batch selection states
@@ -1207,18 +1232,34 @@ export function FileExplorer({
   // Drag handlers
   const handleDragStart = (event: DragStartEvent) => {
     const data = event.active.data.current as any;
+    
     if (data?.type === "folder") {
-      setActiveItem({ type: "folder", id: data.id, data: data.data });
+      const folderId = data.id as string;
+      // Check if this folder is part of a batch selection
+      if (selectionMode && selectedFolders.has(folderId) && selectedFolders.size > 0) {
+        setBatchDragCount(selectedFolders.size + selectedMaterials.size);
+      } else {
+        setBatchDragCount(0);
+      }
+      setActiveItem({ type: "folder", id: folderId, data: data.data });
     } else {
       const materialId = event.active.id as string;
       const material = materials.find(m => m.id === materialId);
+      // Check if this material is part of a batch selection
+      if (selectionMode && selectedMaterials.has(materialId) && selectedMaterials.size > 0) {
+        setBatchDragCount(selectedFolders.size + selectedMaterials.size);
+      } else {
+        setBatchDragCount(0);
+      }
       setActiveItem({ type: "material", id: materialId, data: material });
     }
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
+    const currentBatchCount = batchDragCount;
     setActiveItem(null);
+    setBatchDragCount(0);
 
     if (!over) {
       console.log("No drop target detected");
@@ -1229,7 +1270,8 @@ export function FileExplorer({
       activeId: active.id, 
       overId: over.id,
       activeData: active.data.current,
-      overData: over.data.current 
+      overData: over.data.current,
+      batchMode: currentBatchCount > 1 
     });
 
     const activeData = active.data.current as any;
@@ -1241,6 +1283,77 @@ export function FileExplorer({
       
       console.log("Dropping to folder target:", targetCategoryId);
       
+      // Helper to check if target is a child of a folder
+      const isChild = (parentId: string, childId: string): boolean => {
+        const child = categories.find(c => c.id === childId);
+        if (!child) return false;
+        if (child.parent_id === parentId) return true;
+        if (child.parent_id) return isChild(parentId, child.parent_id);
+        return false;
+      };
+      
+      // BATCH MODE: If dragging with selection active
+      if (currentBatchCount > 1 && selectionMode) {
+        setIsSaving(true);
+        let movedFolders = 0;
+        let movedFiles = 0;
+        
+        try {
+          // Move selected folders
+          for (const folderId of selectedFolders) {
+            const folder = categories.find(c => c.id === folderId);
+            if (!folder) continue;
+            
+            // Don't drop folder into itself or its children
+            if (folderId === targetCategoryId) continue;
+            if (targetCategoryId && isChild(folderId, targetCategoryId)) continue;
+            if (folder.parent_id === targetCategoryId) continue;
+            
+            await supabase
+              .from("categories")
+              .update({ parent_id: targetCategoryId })
+              .eq("id", folderId);
+            movedFolders++;
+          }
+          
+          // Move selected materials
+          for (const materialId of selectedMaterials) {
+            const material = materials.find(m => m.id === materialId);
+            if (!material || material.category_id === targetCategoryId) continue;
+            
+            await supabase
+              .from("materials")
+              .update({ category_id: targetCategoryId })
+              .eq("id", materialId);
+            movedFiles++;
+          }
+          
+          const targetName = targetCategoryId 
+            ? categories.find(c => c.id === targetCategoryId)?.name || "目标文件夹"
+            : "根目录";
+          
+          const messages: string[] = [];
+          if (movedFolders > 0) messages.push(`${movedFolders} 个文件夹`);
+          if (movedFiles > 0) messages.push(`${movedFiles} 个文件`);
+          
+          if (messages.length > 0) {
+            toast({ title: `已移动 ${messages.join(" 和 ")} 到「${targetName}」` });
+          }
+          
+          // Clear selection
+          setSelectedFolders(new Set());
+          setSelectedMaterials(new Set());
+          setSelectionMode(false);
+          onCategoriesRefresh?.();
+        } catch (error) {
+          toast({ title: "批量移动失败", variant: "destructive" });
+        } finally {
+          setIsSaving(false);
+        }
+        return;
+      }
+      
+      // SINGLE ITEM MODE
       // If dragging a folder
       if (activeData?.type === "folder") {
         const folderId = activeData.id as string;
@@ -1256,15 +1369,6 @@ export function FileExplorer({
           console.log("Folder already in target location");
           return;
         }
-        
-        // Check if target is a child of the dragged folder
-        const isChild = (parentId: string, childId: string): boolean => {
-          const child = categories.find(c => c.id === childId);
-          if (!child) return false;
-          if (child.parent_id === parentId) return true;
-          if (child.parent_id) return isChild(parentId, child.parent_id);
-          return false;
-        };
         
         if (targetCategoryId && isChild(folderId, targetCategoryId)) {
           toast({
@@ -1767,7 +1871,7 @@ export function FileExplorer({
 
       {/* Drag overlay */}
       <DragOverlay>
-        <DragOverlayContent item={activeItem} categories={categories} />
+        <DragOverlayContent item={activeItem} categories={categories} batchCount={batchDragCount} />
       </DragOverlay>
 
       {isSaving && (
