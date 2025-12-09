@@ -223,23 +223,23 @@ export function DraggableMaterialCard({
     <ContextMenuContent className="bg-popover w-52">
       {canPreview && (
         <>
-          <ContextMenuItem onClick={() => onPreview(material)}>
+          <ContextMenuItem onSelect={(e) => { e.preventDefault(); onPreview(material); }}>
             <Eye className="mr-2 h-4 w-4" />
             预览
           </ContextMenuItem>
           <ContextMenuSeparator />
         </>
       )}
-      <ContextMenuItem onClick={handleOpen}>
+      <ContextMenuItem onSelect={(e) => { e.preventDefault(); handleOpen(); }}>
         <ExternalLink className="mr-2 h-4 w-4" />
         打开
       </ContextMenuItem>
-      <ContextMenuItem onClick={handleDownload}>
+      <ContextMenuItem onSelect={(e) => { e.preventDefault(); handleDownload(); }}>
         <Download className="mr-2 h-4 w-4" />
         下载
       </ContextMenuItem>
       <ContextMenuSeparator />
-      <ContextMenuItem onClick={handleStartEdit}>
+      <ContextMenuItem onSelect={(e) => { e.preventDefault(); handleStartEdit(); }}>
         <Pencil className="mr-2 h-4 w-4" />
         编辑
       </ContextMenuItem>
@@ -251,7 +251,7 @@ export function DraggableMaterialCard({
           </ContextMenuSubTrigger>
           <ContextMenuSubContent className="bg-popover w-48 max-h-64 overflow-y-auto">
             <ContextMenuItem 
-              onClick={() => onMoveTo(material.id, null)}
+              onSelect={(e) => { e.preventDefault(); onMoveTo(material.id, null); }}
               disabled={material.category_id === null}
             >
               <FolderOpen className="mr-2 h-4 w-4" />
@@ -261,7 +261,7 @@ export function DraggableMaterialCard({
             {flatCats.map(cat => (
               <ContextMenuItem 
                 key={cat.id}
-                onClick={() => onMoveTo(material.id, cat.id)}
+                onSelect={(e) => { e.preventDefault(); onMoveTo(material.id, cat.id); }}
                 disabled={material.category_id === cat.id}
               >
                 <Folder className="mr-2 h-4 w-4" />
@@ -283,7 +283,7 @@ export function DraggableMaterialCard({
             复制到...
           </ContextMenuSubTrigger>
           <ContextMenuSubContent className="bg-popover w-48 max-h-64 overflow-y-auto">
-            <ContextMenuItem onClick={() => onCopyTo(material.id, null)}>
+            <ContextMenuItem onSelect={(e) => { e.preventDefault(); onCopyTo(material.id, null); }}>
               <FolderOpen className="mr-2 h-4 w-4" />
               根目录
             </ContextMenuItem>
@@ -291,7 +291,7 @@ export function DraggableMaterialCard({
             {flatCats.map(cat => (
               <ContextMenuItem 
                 key={cat.id}
-                onClick={() => onCopyTo(material.id, cat.id)}
+                onSelect={(e) => { e.preventDefault(); onCopyTo(material.id, cat.id); }}
               >
                 <Folder className="mr-2 h-4 w-4" />
                 <span className="truncate">{"　".repeat(cat.level)}{cat.name}</span>
@@ -307,7 +307,7 @@ export function DraggableMaterialCard({
       )}
       <ContextMenuSeparator />
       <ContextMenuItem 
-        onClick={() => onDelete(material.id, material.file_path)}
+        onSelect={(e) => { e.preventDefault(); onDelete(material.id, material.file_path); }}
         className="text-destructive"
       >
         <Trash2 className="mr-2 h-4 w-4" />
@@ -448,25 +448,25 @@ export function DraggableMaterialCard({
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             {canPreview && (
-                              <DropdownMenuItem onClick={() => onPreview(material)}>
+                              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onPreview(material); }}>
                                 <Eye className="mr-2 h-4 w-4" />
                                 预览
                               </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem onClick={handleOpen}>
+                            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleOpen(); }}>
                               <ExternalLink className="mr-2 h-4 w-4" />
                               打开
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={handleDownload}>
+                            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleDownload(); }}>
                               <Download className="mr-2 h-4 w-4" />
                               下载
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={handleStartEdit}>
+                            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleStartEdit(); }}>
                               <Pencil className="mr-2 h-4 w-4" />
                               编辑
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => onDelete(material.id, material.file_path)}
+                              onSelect={(e) => { e.preventDefault(); onDelete(material.id, material.file_path); }}
                               className="text-destructive"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
