@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   DndContext,
   DragOverlay,
+  rectIntersection,
   pointerWithin,
   PointerSensor,
   useSensor,
@@ -10,6 +11,7 @@ import {
   DragEndEvent,
   useDroppable,
   useDraggable,
+  CollisionDetection,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -877,10 +879,47 @@ export function FileExplorer({
   const effectiveShowSidebar = layoutMode === "dual" && showSidebar;
   const isOverAnyRoot = isOverSidebarRoot || isOverContentRoot;
 
+  // Custom collision detection: prioritize specific targets, fallback to root zones
+  const customCollisionDetection: CollisionDetection = (args) => {
+    // First try rectIntersection for precise detection
+    const rectCollisions = rectIntersection(args);
+    
+    // Filter out root zones from initial detection to prioritize specific targets
+    const specificTargets = rectCollisions.filter(
+      c => c.id !== "folder-root-sidebar" && c.id !== "content-area-root"
+    );
+    
+    // If we have specific targets (folders, files), use them
+    if (specificTargets.length > 0) {
+      console.log("Found specific target:", specificTargets[0].id);
+      return specificTargets;
+    }
+    
+    // Otherwise, check if we're over any root zone
+    const rootCollisions = rectCollisions.filter(
+      c => c.id === "folder-root-sidebar" || c.id === "content-area-root"
+    );
+    
+    if (rootCollisions.length > 0) {
+      console.log("Found root target:", rootCollisions[0].id);
+      return rootCollisions;
+    }
+    
+    // Also try pointerWithin as fallback
+    const pointerCollisions = pointerWithin(args);
+    if (pointerCollisions.length > 0) {
+      console.log("Pointer within target:", pointerCollisions[0].id);
+      return pointerCollisions;
+    }
+    
+    console.log("No collision detected");
+    return [];
+  };
+
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={pointerWithin}
+      collisionDetection={customCollisionDetection}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
