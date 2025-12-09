@@ -101,7 +101,7 @@ export default function Materials() {
         </p>
       </div>
 
-      {materials.length > 0 && (
+      {(materials.length > 0 || categories.length > 0) && (
         <MaterialFilters
           categories={categories}
           tags={tags}
@@ -110,6 +110,7 @@ export default function Materials() {
           onCategoryChange={setSelectedCategory}
           onTagToggle={handleTagToggle}
           onClearFilters={handleClearFilters}
+          editableCategories={true}
         />
       )}
 

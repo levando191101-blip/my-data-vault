@@ -14,15 +14,43 @@ import {
   BreadcrumbList,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChevronRight, Folder, FolderOpen, Grid3X3, List, Tags } from "lucide-react";
-import { Category } from "@/hooks/useCategories";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { 
+  ChevronRight, 
+  Folder, 
+  FolderOpen, 
+  FolderPlus,
+  Grid3X3, 
+  List, 
+  Tags, 
+  Plus, 
+  Pencil, 
+  Trash2,
+  MoreHorizontal,
+  Settings2
+} from "lucide-react";
+import { Category, useCategories } from "@/hooks/useCategories";
 import { cn } from "@/lib/utils";
 
 interface CategorySelectorProps {
   categories: Category[];
   selectedCategory: string | null;
   onCategoryChange: (categoryId: string | null) => void;
+  editable?: boolean;
 }
 
 // Build tree structure from flat categories
@@ -67,8 +95,16 @@ function getCategoryPath(categoryId: string | null, categories: Category[]): Cat
 function BadgeSelector({ 
   categories, 
   selectedCategory, 
-  onCategoryChange 
-}: CategorySelectorProps) {
+  onCategoryChange,
+  editable,
+  onEdit,
+  onDelete,
+  onAddSub,
+}: CategorySelectorProps & {
+  onEdit?: (cat: Category) => void;
+  onDelete?: (cat: Category) => void;
+  onAddSub?: (cat: Category) => void;
+}) {
   return (
     <div className="flex flex-wrap gap-2">
       <Badge
@@ -79,14 +115,48 @@ function BadgeSelector({
         全部
       </Badge>
       {categories.map((category) => (
-        <Badge
-          key={category.id}
-          variant={selectedCategory === category.id ? "default" : "outline"}
-          className="cursor-pointer transition-colors"
-          onClick={() => onCategoryChange(category.id)}
-        >
-          {category.name}
-        </Badge>
+        <div key={category.id} className="relative group">
+          <Badge
+            variant={selectedCategory === category.id ? "default" : "outline"}
+            className={cn(
+              "cursor-pointer transition-colors",
+              editable && "pr-7"
+            )}
+            onClick={() => onCategoryChange(category.id)}
+          >
+            {category.name}
+          </Badge>
+          {editable && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <MoreHorizontal className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-popover">
+                <DropdownMenuItem onClick={() => onEdit?.(category)}>
+                  <Pencil className="mr-2 h-3 w-3" />
+                  编辑
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onAddSub?.(category)}>
+                  <FolderPlus className="mr-2 h-3 w-3" />
+                  添加子分类
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => onDelete?.(category)}
+                  className="text-destructive"
+                >
+                  <Trash2 className="mr-2 h-3 w-3" />
+                  删除
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       ))}
     </div>
   );
@@ -290,17 +360,84 @@ export function CategorySelector({
   categories,
   selectedCategory,
   onCategoryChange,
+  editable = false,
 }: CategorySelectorProps) {
   const [viewMode, setViewMode] = useState<"badge" | "grid" | "tree" | "breadcrumb">("badge");
+  const [editMode, setEditMode] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogType, setDialogType] = useState<"create" | "edit">("create");
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [parentCategory, setParentCategory] = useState<Category | null>(null);
+  const [categoryName, setCategoryName] = useState("");
+  
+  const { createCategory, updateCategory, deleteCategory } = useCategories();
 
-  if (categories.length === 0) {
-    return null;
-  }
+  const handleCreate = async () => {
+    if (!categoryName.trim()) return;
+    await createCategory(categoryName.trim(), parentCategory?.id);
+    setCategoryName("");
+    setParentCategory(null);
+    setDialogOpen(false);
+  };
+
+  const handleEdit = async () => {
+    if (!categoryName.trim() || !editingCategory) return;
+    await updateCategory(editingCategory.id, categoryName.trim());
+    setCategoryName("");
+    setEditingCategory(null);
+    setDialogOpen(false);
+  };
+
+  const handleDelete = async (category: Category) => {
+    if (confirm(`确定要删除分类「${category.name}」吗？`)) {
+      await deleteCategory(category.id);
+    }
+  };
+
+  const openCreateDialog = (parent: Category | null = null) => {
+    setDialogType("create");
+    setParentCategory(parent);
+    setCategoryName("");
+    setDialogOpen(true);
+  };
+
+  const openEditDialog = (category: Category) => {
+    setDialogType("edit");
+    setEditingCategory(category);
+    setCategoryName(category.name);
+    setDialogOpen(true);
+  };
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-muted-foreground">分类筛选</span>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-muted-foreground">分类筛选</span>
+          {editable && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={() => setEditMode(!editMode)}
+                title={editMode ? "退出编辑" : "编辑分类"}
+              >
+                <Settings2 className={cn("h-4 w-4", editMode && "text-primary")} />
+              </Button>
+              {editMode && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-6 text-xs"
+                  onClick={() => openCreateDialog(null)}
+                >
+                  <Plus className="mr-1 h-3 w-3" />
+                  新建分类
+                </Button>
+              )}
+            </>
+          )}
+        </div>
         <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as typeof viewMode)}>
           <TabsList className="h-8">
             <TabsTrigger value="badge" className="h-6 px-2">
@@ -319,34 +456,81 @@ export function CategorySelector({
         </Tabs>
       </div>
 
-      {viewMode === "badge" && (
-        <BadgeSelector 
-          categories={categories} 
-          selectedCategory={selectedCategory} 
-          onCategoryChange={onCategoryChange} 
-        />
+      {categories.length === 0 ? (
+        editable ? (
+          <div className="text-center py-4">
+            <p className="text-sm text-muted-foreground mb-2">暂无分类</p>
+            <Button variant="outline" size="sm" onClick={() => openCreateDialog(null)}>
+              <Plus className="mr-1 h-4 w-4" />
+              创建第一个分类
+            </Button>
+          </div>
+        ) : null
+      ) : (
+        <>
+          {viewMode === "badge" && (
+            <BadgeSelector 
+              categories={categories} 
+              selectedCategory={selectedCategory} 
+              onCategoryChange={onCategoryChange}
+              editable={editMode}
+              onEdit={openEditDialog}
+              onDelete={handleDelete}
+              onAddSub={openCreateDialog}
+            />
+          )}
+          {viewMode === "grid" && (
+            <CardGridSelector 
+              categories={categories} 
+              selectedCategory={selectedCategory} 
+              onCategoryChange={onCategoryChange} 
+            />
+          )}
+          {viewMode === "tree" && (
+            <TreeListSelector 
+              categories={categories} 
+              selectedCategory={selectedCategory} 
+              onCategoryChange={onCategoryChange} 
+            />
+          )}
+          {viewMode === "breadcrumb" && (
+            <BreadcrumbSelector 
+              categories={categories} 
+              selectedCategory={selectedCategory} 
+              onCategoryChange={onCategoryChange} 
+            />
+          )}
+        </>
       )}
-      {viewMode === "grid" && (
-        <CardGridSelector 
-          categories={categories} 
-          selectedCategory={selectedCategory} 
-          onCategoryChange={onCategoryChange} 
-        />
-      )}
-      {viewMode === "tree" && (
-        <TreeListSelector 
-          categories={categories} 
-          selectedCategory={selectedCategory} 
-          onCategoryChange={onCategoryChange} 
-        />
-      )}
-      {viewMode === "breadcrumb" && (
-        <BreadcrumbSelector 
-          categories={categories} 
-          selectedCategory={selectedCategory} 
-          onCategoryChange={onCategoryChange} 
-        />
-      )}
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {dialogType === "create" 
+                ? parentCategory 
+                  ? `在「${parentCategory.name}」下新建子分类` 
+                  : "新建分类"
+                : "编辑分类"
+              }
+            </DialogTitle>
+          </DialogHeader>
+          <Input
+            placeholder="分类名称"
+            value={categoryName}
+            onChange={(e) => setCategoryName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && (dialogType === "create" ? handleCreate() : handleEdit())}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              取消
+            </Button>
+            <Button onClick={dialogType === "create" ? handleCreate : handleEdit}>
+              {dialogType === "create" ? "创建" : "保存"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
