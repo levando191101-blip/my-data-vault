@@ -42,6 +42,9 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuTrigger,
+  ContextMenuSub,
+  ContextMenuSubTrigger,
+  ContextMenuSubContent,
 } from "@/components/ui/context-menu";
 import {
   Dialog,
@@ -71,6 +74,8 @@ import {
   X,
   Download,
   FolderInput,
+  Copy,
+  FolderSymlink,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -184,6 +189,8 @@ function DraggableFolderNode({
   onEdit,
   onDelete,
   onAddSub,
+  onMoveTo,
+  allCategories,
 }: {
   node: Category & { children: (Category & { children: any[] })[] };
   selectedCategory: string | null;
@@ -194,6 +201,8 @@ function DraggableFolderNode({
   onEdit: (cat: Category) => void;
   onDelete: (cat: Category) => void;
   onAddSub: (cat: Category) => void;
+  onMoveTo: (folderId: string, targetParentId: string | null) => void;
+  allCategories: Category[];
 }) {
   const { setNodeRef: setDropRef, isOver } = useDroppable({
     id: `folder-${node.id}`,
@@ -207,6 +216,19 @@ function DraggableFolderNode({
 
   const hasChildren = node.children.length > 0;
   const isExpanded = expandedFolders.has(node.id);
+
+  // Filter out the current folder and its children for move targets
+  const isChildOf = (parentId: string, childId: string): boolean => {
+    const child = allCategories.find(c => c.id === childId);
+    if (!child) return false;
+    if (child.parent_id === parentId) return true;
+    if (child.parent_id) return isChildOf(parentId, child.parent_id);
+    return false;
+  };
+
+  const moveTargets = allCategories.filter(c => 
+    c.id !== node.id && !isChildOf(node.id, c.id)
+  );
 
   return (
     <div className={cn("space-y-0.5", isDragging && "opacity-50")}>
@@ -283,7 +305,7 @@ function DraggableFolderNode({
             </DropdownMenu>
           </div>
         </ContextMenuTrigger>
-        <ContextMenuContent className="bg-popover w-48">
+        <ContextMenuContent className="bg-popover w-52">
           <ContextMenuItem onClick={() => onCategoryChange(node.id)}>
             <FolderOpen className="mr-2 h-4 w-4" />
             打开文件夹
@@ -297,6 +319,37 @@ function DraggableFolderNode({
             <FolderPlus className="mr-2 h-4 w-4" />
             新建子文件夹
           </ContextMenuItem>
+          <ContextMenuSub>
+            <ContextMenuSubTrigger>
+              <FolderSymlink className="mr-2 h-4 w-4" />
+              移动到...
+            </ContextMenuSubTrigger>
+            <ContextMenuSubContent className="bg-popover w-48 max-h-64 overflow-y-auto">
+              <ContextMenuItem 
+                onClick={() => onMoveTo(node.id, null)}
+                disabled={node.parent_id === null}
+              >
+                <FolderOpen className="mr-2 h-4 w-4" />
+                根目录
+              </ContextMenuItem>
+              <ContextMenuSeparator />
+              {moveTargets.map(target => (
+                <ContextMenuItem 
+                  key={target.id}
+                  onClick={() => onMoveTo(node.id, target.id)}
+                  disabled={node.parent_id === target.id}
+                >
+                  <Folder className="mr-2 h-4 w-4" />
+                  <span className="truncate">{target.name}</span>
+                </ContextMenuItem>
+              ))}
+              {moveTargets.length === 0 && (
+                <ContextMenuItem disabled>
+                  <span className="text-muted-foreground text-xs">没有可用的目标文件夹</span>
+                </ContextMenuItem>
+              )}
+            </ContextMenuSubContent>
+          </ContextMenuSub>
           <ContextMenuSeparator />
           <ContextMenuItem onClick={() => onDelete(node)} className="text-destructive">
             <Trash2 className="mr-2 h-4 w-4" />
@@ -318,6 +371,8 @@ function DraggableFolderNode({
               onEdit={onEdit}
               onDelete={onDelete}
               onAddSub={onAddSub}
+              onMoveTo={onMoveTo}
+              allCategories={allCategories}
             />
           ))}
         </div>
@@ -333,6 +388,8 @@ function DraggableFolderCard({
   onEdit,
   onDelete,
   onAddSub,
+  onMoveTo,
+  allCategories,
   viewMode = "grid",
   selectionMode = false,
   isSelected = false,
@@ -343,6 +400,8 @@ function DraggableFolderCard({
   onEdit: (cat: Category) => void;
   onDelete: (cat: Category) => void;
   onAddSub: (cat: Category) => void;
+  onMoveTo: (folderId: string, targetParentId: string | null) => void;
+  allCategories: Category[];
   viewMode?: "grid" | "list";
   selectionMode?: boolean;
   isSelected?: boolean;
@@ -358,9 +417,22 @@ function DraggableFolderCard({
     data: { type: "folder", id: category.id, data: category },
   });
 
+  // Filter out the current folder and its children for move targets
+  const isChildOf = (parentId: string, childId: string): boolean => {
+    const child = allCategories.find(c => c.id === childId);
+    if (!child) return false;
+    if (child.parent_id === parentId) return true;
+    if (child.parent_id) return isChildOf(parentId, child.parent_id);
+    return false;
+  };
+
+  const moveTargets = allCategories.filter(c => 
+    c.id !== category.id && !isChildOf(category.id, c.id)
+  );
+
   // Context menu content (shared between list and grid modes)
   const contextMenuContent = (
-    <ContextMenuContent className="bg-popover w-48">
+    <ContextMenuContent className="bg-popover w-52">
       <ContextMenuItem onClick={onClick}>
         <FolderOpen className="mr-2 h-4 w-4" />
         打开文件夹
@@ -374,6 +446,37 @@ function DraggableFolderCard({
         <FolderPlus className="mr-2 h-4 w-4" />
         新建子文件夹
       </ContextMenuItem>
+      <ContextMenuSub>
+        <ContextMenuSubTrigger>
+          <FolderSymlink className="mr-2 h-4 w-4" />
+          移动到...
+        </ContextMenuSubTrigger>
+        <ContextMenuSubContent className="bg-popover w-48 max-h-64 overflow-y-auto">
+          <ContextMenuItem 
+            onClick={() => onMoveTo(category.id, null)}
+            disabled={category.parent_id === null}
+          >
+            <FolderOpen className="mr-2 h-4 w-4" />
+            根目录
+          </ContextMenuItem>
+          <ContextMenuSeparator />
+          {moveTargets.map(target => (
+            <ContextMenuItem 
+              key={target.id}
+              onClick={() => onMoveTo(category.id, target.id)}
+              disabled={category.parent_id === target.id}
+            >
+              <Folder className="mr-2 h-4 w-4" />
+              <span className="truncate">{target.name}</span>
+            </ContextMenuItem>
+          ))}
+          {moveTargets.length === 0 && (
+            <ContextMenuItem disabled>
+              <span className="text-muted-foreground text-xs">没有可用的目标文件夹</span>
+            </ContextMenuItem>
+          )}
+        </ContextMenuSubContent>
+      </ContextMenuSub>
       <ContextMenuSeparator />
       <ContextMenuItem onClick={() => onDelete(category)} className="text-destructive">
         <Trash2 className="mr-2 h-4 w-4" />
@@ -674,6 +777,29 @@ export function FileExplorer({
     if (confirm(`确定要删除文件夹「${category.name}」吗？`)) {
       await deleteCategory(category.id);
       onCategoriesRefresh?.();
+    }
+  };
+
+  const handleMoveFolder = async (folderId: string, targetParentId: string | null) => {
+    const folder = categories.find(c => c.id === folderId);
+    if (!folder || folder.parent_id === targetParentId) return;
+    
+    setIsSaving(true);
+    try {
+      await supabase
+        .from("categories")
+        .update({ parent_id: targetParentId })
+        .eq("id", folderId);
+      
+      const targetName = targetParentId 
+        ? categories.find(c => c.id === targetParentId)?.name || "目标文件夹"
+        : "根目录";
+      toast({ title: `已移动到「${targetName}」` });
+      onCategoriesRefresh?.();
+    } catch (error) {
+      toast({ title: "移动失败", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -1056,6 +1182,8 @@ export function FileExplorer({
                     onEdit={openEditDialog}
                     onDelete={handleDeleteCategory}
                     onAddSub={openCreateDialog}
+                    onMoveTo={handleMoveFolder}
+                    allCategories={categories}
                   />
                 ))}
               </div>
@@ -1225,6 +1353,8 @@ export function FileExplorer({
                         onEdit={openEditDialog}
                         onDelete={handleDeleteCategory}
                         onAddSub={openCreateDialog}
+                        onMoveTo={handleMoveFolder}
+                        allCategories={categories}
                         viewMode={folderViewMode}
                         selectionMode={selectionMode}
                         isSelected={selectedFolders.has(cat.id)}
