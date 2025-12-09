@@ -840,9 +840,14 @@ export function FileExplorer({
     }
   };
 
-  // Root drop zone
-  const { setNodeRef: setRootRef, isOver: isOverRoot } = useDroppable({
-    id: "folder-root",
+  // Root drop zones - one for sidebar, one for breadcrumb
+  const { setNodeRef: setSidebarRootRef, isOver: isOverSidebarRoot } = useDroppable({
+    id: "folder-root-sidebar",
+    data: { type: "folder", categoryId: null },
+  });
+
+  const { setNodeRef: setBreadcrumbRootRef, isOver: isOverBreadcrumbRoot } = useDroppable({
+    id: "folder-root-breadcrumb",
     data: { type: "folder", categoryId: null },
   });
 
@@ -869,11 +874,11 @@ export function FileExplorer({
               <div className="p-2 space-y-0.5">
                 {/* Root folder */}
                 <div
-                  ref={setRootRef}
+                  ref={setSidebarRootRef}
                   className={cn(
                     "flex items-center gap-1 py-1 px-2 rounded-md cursor-pointer transition-colors",
                     currentCategory === null ? "bg-accent text-accent-foreground" : "hover:bg-muted",
-                    isOverRoot && "ring-2 ring-primary bg-primary/10"
+                    isOverSidebarRoot && "ring-2 ring-primary bg-primary/10"
                   )}
                   onClick={() => setCurrentCategory(null)}
                 >
@@ -924,12 +929,17 @@ export function FileExplorer({
             <Breadcrumb className="flex-1">
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <BreadcrumbLink
-                    className={cn("cursor-pointer", !currentCategory && "font-semibold")}
+                  <div
+                    ref={setBreadcrumbRootRef}
+                    className={cn(
+                      "cursor-pointer px-1 py-0.5 rounded transition-colors",
+                      !currentCategory && "font-semibold",
+                      isOverBreadcrumbRoot && "ring-2 ring-primary bg-primary/10"
+                    )}
                     onClick={() => setCurrentCategory(null)}
                   >
                     全部文件
-                  </BreadcrumbLink>
+                  </div>
                 </BreadcrumbItem>
                 {categoryPath.map((cat, index) => (
                   <BreadcrumbItem key={cat.id}>
