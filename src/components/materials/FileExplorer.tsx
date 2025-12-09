@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   DndContext,
   DragOverlay,
   closestCenter,
+  pointerWithin,
+  rectIntersection,
+  getFirstCollision,
   PointerSensor,
   useSensor,
   useSensors,
@@ -10,6 +13,7 @@ import {
   DragEndEvent,
   useDroppable,
   useDraggable,
+  CollisionDetection,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -877,10 +881,48 @@ export function FileExplorer({
   const effectiveShowSidebar = layoutMode === "dual" && showSidebar;
   const isOverAnyRoot = isOverSidebarRoot || isOverContentRoot;
 
+  // Custom collision detection that prioritizes root zones when pointer is directly over them
+  const customCollisionDetection: CollisionDetection = useCallback((args) => {
+    // First, check if pointer is directly within any droppable using pointerWithin
+    const pointerCollisions = pointerWithin(args);
+    
+    // Check if we're directly over a root zone
+    const rootZoneCollision = pointerCollisions.find(
+      c => c.id === "folder-root-sidebar" || c.id === "content-area-root"
+    );
+    
+    if (rootZoneCollision) {
+      // Check if there's also a more specific target (folder card) under the pointer
+      const folderCollision = pointerCollisions.find(
+        c => {
+          const data = c.data?.droppableContainer?.data?.current;
+          return data?.type === "folder" && c.id !== "folder-root-sidebar" && c.id !== "content-area-root";
+        }
+      );
+      
+      // If pointer is directly over a folder card, use that instead of root
+      if (folderCollision) {
+        console.log("Using folder target:", folderCollision.id);
+        return [folderCollision];
+      }
+      
+      // Otherwise use the root zone
+      console.log("Using root zone:", rootZoneCollision.id);
+      return [rootZoneCollision];
+    }
+    
+    // If not over root zone, use closestCenter for normal behavior
+    const closestCollisions = closestCenter(args);
+    if (closestCollisions.length > 0) {
+      console.log("Using closest target:", closestCollisions[0].id);
+    }
+    return closestCollisions;
+  }, []);
+
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={customCollisionDetection}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
