@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useMaterials, Material } from "@/hooks/useMaterials";
 import { useCategories } from "@/hooks/useCategories";
-import { useTags } from "@/hooks/useTags";
 import { MaterialPreviewDialog } from "@/components/materials/MaterialPreviewDialog";
 import { FileExplorer } from "@/components/materials/FileExplorer";
 import {
@@ -18,19 +17,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 
 export default function Materials() {
   const { materials, loading, deleteMaterial, updateMaterial, refetch: refetchMaterials } = useMaterials();
-  const { categories, refetch: refetchCategories, createCategory } = useCategories();
-  const { tags } = useTags();
+  const { categories, refetch: refetchCategories } = useCategories();
 
   const [previewMaterial, setPreviewMaterial] = useState<Material | null>(null);
   const [localMaterials, setLocalMaterials] = useState<Material[]>([]);
@@ -39,8 +29,6 @@ export default function Materials() {
     id: string;
     filePath: string;
   }>({ open: false, id: "", filePath: "" });
-  const [createCategoryDialog, setCreateCategoryDialog] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState("");
 
   // Sync local materials with fetched materials
   useEffect(() => {
@@ -66,14 +54,6 @@ export default function Materials() {
       await refetchMaterials();
     }
     return success;
-  };
-
-  const handleCreateCategory = async () => {
-    if (!newCategoryName.trim()) return;
-    await createCategory(newCategoryName.trim());
-    setNewCategoryName("");
-    setCreateCategoryDialog(false);
-    refetchCategories();
   };
 
   if (loading) {
@@ -116,7 +96,6 @@ export default function Materials() {
           onSave={handleSave}
           onPreview={setPreviewMaterial}
           onReorder={handleReorder}
-          onCategoryCreate={() => setCreateCategoryDialog(true)}
           onCategoriesRefresh={refetchCategories}
         />
       )}
@@ -148,29 +127,6 @@ export default function Materials() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <Dialog open={createCategoryDialog} onOpenChange={setCreateCategoryDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>新建文件夹</DialogTitle>
-          </DialogHeader>
-          <Input
-            placeholder="文件夹名称"
-            value={newCategoryName}
-            onChange={(e) => setNewCategoryName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleCreateCategory()}
-            autoFocus
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateCategoryDialog(false)}>
-              取消
-            </Button>
-            <Button onClick={handleCreateCategory} disabled={!newCategoryName.trim()}>
-              创建
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
