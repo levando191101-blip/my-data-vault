@@ -109,27 +109,27 @@ export function MaterialCard({ material, onDelete, onEdit, onPreview }: Material
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   {onPreview && (material.file_type === "image" || material.file_type === "pdf" || material.mime_type === "application/pdf") && (
-                    <DropdownMenuItem onClick={() => onPreview(material)}>
+                    <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onPreview(material); }}>
                       <Eye className="mr-2 h-4 w-4" />
                       预览
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem onClick={handleOpen}>
+                  <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleOpen(); }}>
                     <ExternalLink className="mr-2 h-4 w-4" />
                     打开
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleDownload}>
+                  <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleDownload(); }}>
                     <Download className="mr-2 h-4 w-4" />
                     下载
                   </DropdownMenuItem>
                   {onEdit && (
-                    <DropdownMenuItem onClick={() => onEdit(material)}>
+                    <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onEdit(material); }}>
                       <Pencil className="mr-2 h-4 w-4" />
                       编辑
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem
-                    onClick={() => onDelete(material.id, material.file_path)}
+                    onSelect={(e) => { e.preventDefault(); onDelete(material.id, material.file_path); }}
                     className="text-destructive"
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
