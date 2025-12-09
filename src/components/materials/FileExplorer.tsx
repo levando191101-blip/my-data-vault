@@ -284,51 +284,56 @@ function DraggableFolderCard({
       )}
       onDoubleClick={onClick}
     >
-      <CardContent className="p-4 flex items-center gap-3">
-        <button
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <GripVertical className="h-4 w-4 text-muted-foreground" />
-        </button>
+      <CardContent className="p-3 flex flex-col items-center gap-2">
+        <div className="w-full flex items-center justify-between">
+          <button
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors opacity-0 group-hover:opacity-100"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
+          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-popover">
+              <DropdownMenuItem onClick={() => onEdit(category)}>
+                <Pencil className="mr-2 h-4 w-4" />
+                重命名
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onAddSub(category)}>
+                <FolderPlus className="mr-2 h-4 w-4" />
+                新建子文件夹
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onDelete(category)} className="text-destructive">
+                <Trash2 className="mr-2 h-4 w-4" />
+                删除
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
         <div 
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 cursor-pointer"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 cursor-pointer"
           onClick={onClick}
         >
-          <Folder className="h-5 w-5 text-primary" />
+          <Folder className="h-6 w-6 text-primary" />
         </div>
-        <div className="min-w-0 flex-1 cursor-pointer" onClick={onClick}>
-          <h3 className="font-medium truncate">{category.name}</h3>
-          <p className="text-xs text-muted-foreground">文件夹</p>
-        </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-popover">
-            <DropdownMenuItem onClick={() => onEdit(category)}>
-              <Pencil className="mr-2 h-4 w-4" />
-              重命名
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onAddSub(category)}>
-              <FolderPlus className="mr-2 h-4 w-4" />
-              新建子文件夹
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onDelete(category)} className="text-destructive">
-              <Trash2 className="mr-2 h-4 w-4" />
-              删除
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <p 
+          className="text-sm font-medium text-center w-full px-1 cursor-pointer line-clamp-2" 
+          title={category.name}
+          onClick={onClick}
+        >
+          {category.name}
+        </p>
       </CardContent>
     </Card>
   );
