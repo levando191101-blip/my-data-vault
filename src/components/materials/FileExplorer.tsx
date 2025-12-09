@@ -960,25 +960,26 @@ export function FileExplorer({
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
+            
+            {/* Root folder - OUTSIDE ScrollArea for proper drop detection */}
+            <div
+              ref={setSidebarRootRef}
+              className={cn(
+                "flex items-center gap-2 py-3 px-3 mx-2 mt-2 rounded-md cursor-pointer transition-all min-h-[44px] border-2 border-dashed",
+                currentCategory === null ? "bg-accent text-accent-foreground border-accent" : "hover:bg-muted border-transparent",
+                isOverSidebarRoot && "ring-2 ring-primary bg-primary/10 border-primary scale-[1.02]"
+              )}
+              onClick={() => setCurrentCategory(null)}
+            >
+              <FolderOpen className="h-5 w-5 text-primary shrink-0" />
+              <span className="text-sm font-medium">全部文件（根目录）</span>
+              {isOverSidebarRoot && (
+                <span className="ml-auto text-xs text-primary">释放</span>
+              )}
+            </div>
+            
             <ScrollArea className="flex-1">
               <div className="p-2 space-y-0.5">
-                {/* Root folder - enlarged droppable area */}
-                <div
-                  ref={setSidebarRootRef}
-                  className={cn(
-                    "flex items-center gap-2 py-3 px-3 rounded-md cursor-pointer transition-all min-h-[44px]",
-                    currentCategory === null ? "bg-accent text-accent-foreground" : "hover:bg-muted",
-                    isOverSidebarRoot && "ring-2 ring-primary bg-primary/10 scale-[1.02]"
-                  )}
-                  onClick={() => setCurrentCategory(null)}
-                >
-                  <FolderOpen className="h-5 w-5 text-primary shrink-0" />
-                  <span className="text-sm font-medium">全部文件</span>
-                  {isOverSidebarRoot && (
-                    <span className="ml-auto text-xs text-primary">放置到根目录</span>
-                  )}
-                </div>
-                
                 {roots.map((root) => (
                   <DraggableFolderNode
                     key={root.id}
@@ -994,22 +995,6 @@ export function FileExplorer({
                 ))}
               </div>
             </ScrollArea>
-            
-            {/* Bottom drop zone for root - always visible during drag */}
-            <div
-              ref={(el) => {
-                // Also register this as part of the sidebar root droppable
-                if (el && isOverSidebarRoot) {
-                  el.classList.add("ring-2", "ring-primary", "bg-primary/10");
-                }
-              }}
-              className={cn(
-                "p-3 border-t text-center text-xs text-muted-foreground transition-all",
-                isOverSidebarRoot && "ring-2 ring-primary bg-primary/10 text-primary font-medium"
-              )}
-            >
-              {isOverSidebarRoot ? "释放以移动到根目录" : "拖拽到此处移动到根目录"}
-            </div>
           </div>
         )}
 
