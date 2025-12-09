@@ -865,58 +865,69 @@ export function FileExplorer({
     }
   };
 
-  // Root drop zones - one for sidebar, one for breadcrumb
+  // Sidebar root drop zone - for moving to actual root (null)
   const { setNodeRef: setSidebarRootRef, isOver: isOverSidebarRoot } = useDroppable({
     id: "folder-root-sidebar",
-    data: { type: "folder", categoryId: null },
+    data: { type: "folder", categoryId: null, isRootZone: true },
   });
 
-  // Content area root drop zone - for dropping items to root when in a subfolder
-  const { setNodeRef: setContentRootRef, isOver: isOverContentRoot } = useDroppable({
-    id: "content-area-root",
-    data: { type: "folder", categoryId: null },
-    disabled: currentCategory === null, // Disable when already at root
+  // Content area drop zone - for dropping items to CURRENT directory (not root)
+  const { setNodeRef: setContentRootRef, isOver: isOverContentArea } = useDroppable({
+    id: "content-area-current",
+    data: { type: "folder", categoryId: currentCategory, isContentArea: true },
   });
 
   const effectiveShowSidebar = layoutMode === "dual" && showSidebar;
-  const isOverAnyRoot = isOverSidebarRoot || isOverContentRoot;
 
-  // Custom collision detection that prioritizes root zones when pointer is directly over them
+  // Custom collision detection: prioritize specific folder targets, then fall back to area zones
   const customCollisionDetection: CollisionDetection = useCallback((args) => {
-    // First, check if pointer is directly within any droppable using pointerWithin
+    // Get all collisions using rectIntersection (more accurate for overlapping elements)
+    const rectCollisions = rectIntersection(args);
     const pointerCollisions = pointerWithin(args);
     
-    // Check if we're directly over a root zone
-    const rootZoneCollision = pointerCollisions.find(
-      c => c.id === "folder-root-sidebar" || c.id === "content-area-root"
-    );
-    
-    if (rootZoneCollision) {
-      // Check if there's also a more specific target (folder card) under the pointer
-      const folderCollision = pointerCollisions.find(
-        c => {
-          const data = c.data?.droppableContainer?.data?.current;
-          return data?.type === "folder" && c.id !== "folder-root-sidebar" && c.id !== "content-area-root";
-        }
-      );
-      
-      // If pointer is directly over a folder card, use that instead of root
-      if (folderCollision) {
-        console.log("Using folder target:", folderCollision.id);
-        return [folderCollision];
+    // Combine both for better detection
+    const allCollisions = [...rectCollisions];
+    pointerCollisions.forEach(pc => {
+      if (!allCollisions.find(c => c.id === pc.id)) {
+        allCollisions.push(pc);
       }
-      
-      // Otherwise use the root zone
-      console.log("Using root zone:", rootZoneCollision.id);
-      return [rootZoneCollision];
+    });
+    
+    if (allCollisions.length === 0) {
+      // Fallback to closestCenter if no direct collisions
+      return closestCenter(args);
     }
     
-    // If not over root zone, use closestCenter for normal behavior
-    const closestCollisions = closestCenter(args);
-    if (closestCollisions.length > 0) {
-      console.log("Using closest target:", closestCollisions[0].id);
+    // Priority 1: Specific folder cards (not the area zones)
+    const folderCardCollision = allCollisions.find(c => {
+      const data = c.data?.droppableContainer?.data?.current;
+      return data?.type === "folder" && 
+             c.id !== "folder-root-sidebar" && 
+             c.id !== "content-area-current";
+    });
+    
+    if (folderCardCollision) {
+      console.log("Target: folder card", folderCardCollision.id);
+      return [folderCardCollision];
     }
-    return closestCollisions;
+    
+    // Priority 2: Sidebar root zone (for moving to actual root)
+    const sidebarRootCollision = allCollisions.find(c => c.id === "folder-root-sidebar");
+    if (sidebarRootCollision) {
+      console.log("Target: sidebar root");
+      return [sidebarRootCollision];
+    }
+    
+    // Priority 3: Content area (for moving to current directory)
+    const contentAreaCollision = allCollisions.find(c => c.id === "content-area-current");
+    if (contentAreaCollision) {
+      console.log("Target: content area (current directory)");
+      return [contentAreaCollision];
+    }
+    
+    // Fallback to first collision
+    console.log("Target: fallback", allCollisions[0]?.id);
+    return [allCollisions[0]];
   }, []);
 
   return (
@@ -1066,7 +1077,7 @@ export function FileExplorer({
               ref={setContentRootRef}
               className={cn(
                 "p-4 min-h-full transition-colors",
-                isOverContentRoot && currentCategory !== null && "bg-primary/5 ring-2 ring-inset ring-primary/30"
+                isOverContentArea && "bg-primary/5 ring-2 ring-inset ring-primary/30"
               )}
             >
               {/* Show child folders */}
