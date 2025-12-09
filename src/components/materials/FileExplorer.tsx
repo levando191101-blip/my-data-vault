@@ -451,7 +451,8 @@ export function FileExplorer({
   
   const [layoutMode, setLayoutMode] = useState<"dual" | "single">("dual");
   const [showSidebar, setShowSidebar] = useState(true);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [folderViewMode, setFolderViewMode] = useState<"grid" | "list">("grid");
+  const [fileViewMode, setFileViewMode] = useState<"grid" | "list">("grid");
   const [currentCategory, setCurrentCategory] = useState<string | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [activeItem, setActiveItem] = useState<DragItem | null>(null);
@@ -762,17 +763,6 @@ export function FileExplorer({
               </TabsList>
             </Tabs>
 
-            {/* View mode toggle */}
-            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "grid" | "list")}>
-              <TabsList className="h-8">
-                <TabsTrigger value="grid" className="h-6 px-2">
-                  <LayoutGrid className="h-4 w-4" />
-                </TabsTrigger>
-                <TabsTrigger value="list" className="h-6 px-2">
-                  <List className="h-4 w-4" />
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
           </div>
 
           {/* Content area */}
@@ -781,9 +771,21 @@ export function FileExplorer({
               {/* Show child folders */}
               {childCategories.length > 0 && (
                 <div className="mb-6">
-                  <h4 className="text-sm font-medium text-muted-foreground mb-3">文件夹</h4>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-medium text-muted-foreground">文件夹</h4>
+                    <Tabs value={folderViewMode} onValueChange={(v) => setFolderViewMode(v as "grid" | "list")}>
+                      <TabsList className="h-7">
+                        <TabsTrigger value="grid" className="h-5 px-1.5">
+                          <LayoutGrid className="h-3.5 w-3.5" />
+                        </TabsTrigger>
+                        <TabsTrigger value="list" className="h-5 px-1.5">
+                          <List className="h-3.5 w-3.5" />
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                  </div>
                   <div className={cn(
-                    viewMode === "grid" 
+                    folderViewMode === "grid" 
                       ? "grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
                       : "space-y-2"
                   )}>
@@ -795,7 +797,7 @@ export function FileExplorer({
                         onEdit={openEditDialog}
                         onDelete={handleDeleteCategory}
                         onAddSub={openCreateDialog}
-                        viewMode={viewMode}
+                        viewMode={folderViewMode}
                       />
                     ))}
                   </div>
@@ -805,15 +807,25 @@ export function FileExplorer({
               {/* Files */}
               {currentMaterials.length > 0 ? (
                 <div>
-                  {childCategories.length > 0 && (
-                    <h4 className="text-sm font-medium text-muted-foreground mb-3">文件</h4>
-                  )}
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-medium text-muted-foreground">文件</h4>
+                    <Tabs value={fileViewMode} onValueChange={(v) => setFileViewMode(v as "grid" | "list")}>
+                      <TabsList className="h-7">
+                        <TabsTrigger value="grid" className="h-5 px-1.5">
+                          <LayoutGrid className="h-3.5 w-3.5" />
+                        </TabsTrigger>
+                        <TabsTrigger value="list" className="h-5 px-1.5">
+                          <List className="h-3.5 w-3.5" />
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                  </div>
                   <SortableContext
                     items={currentMaterials.map((m) => m.id)}
                     strategy={rectSortingStrategy}
                   >
                     <div className={cn(
-                      viewMode === "grid"
+                      fileViewMode === "grid"
                         ? "grid gap-4 md:grid-cols-2 lg:grid-cols-3"
                         : "space-y-2"
                     )}>
