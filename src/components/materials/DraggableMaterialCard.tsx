@@ -166,20 +166,7 @@ export function DraggableMaterialCard({
       .getPublicUrl(material.file_path);
 
     if (data?.publicUrl) {
-      const url = data.publicUrl;
-      // Use requestAnimationFrame to completely escape React's event system
-      requestAnimationFrame(() => {
-        const newWindow = window.open(url, "_blank", "noopener,noreferrer");
-        // If popup was blocked, the return value will be null
-        if (!newWindow) {
-          // Fallback: navigate using location
-          const a = document.createElement("a");
-          a.href = url;
-          a.target = "_blank";
-          a.rel = "noopener noreferrer";
-          a.click();
-        }
-      });
+      window.open(data.publicUrl, "_blank", "noopener,noreferrer");
     }
   };
 
@@ -444,32 +431,49 @@ export function DraggableMaterialCard({
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
+                          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                             {canPreview && (
-                              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); onPreview(material); }}>
+                              <div
+                                className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                                style={{ cursor: 'pointer' }}
+                                onClick={(e) => { e.stopPropagation(); onPreview(material); }}
+                              >
                                 <Eye className="mr-2 h-4 w-4" />
                                 预览
-                              </DropdownMenuItem>
+                              </div>
                             )}
-                            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleOpen(); }}>
+                            <div
+                              className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                              style={{ cursor: 'pointer' }}
+                              onClick={(e) => { e.stopPropagation(); handleOpen(); }}
+                            >
                               <ExternalLink className="mr-2 h-4 w-4" />
                               打开
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleDownload(); }}>
+                            </div>
+                            <div
+                              className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                              style={{ cursor: 'pointer' }}
+                              onClick={(e) => { e.stopPropagation(); handleDownload(); }}
+                            >
                               <Download className="mr-2 h-4 w-4" />
                               下载
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleStartEdit(); }}>
+                            </div>
+                            <div
+                              className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                              style={{ cursor: 'pointer' }}
+                              onClick={(e) => { e.stopPropagation(); handleStartEdit(); }}
+                            >
                               <Pencil className="mr-2 h-4 w-4" />
                               编辑
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onSelect={(e) => { e.preventDefault(); onDelete(material.id, material.file_path); }}
-                              className="text-destructive"
+                            </div>
+                            <div
+                              className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground text-destructive"
+                              style={{ cursor: 'pointer' }}
+                              onClick={(e) => { e.stopPropagation(); onDelete(material.id, material.file_path); }}
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               删除
-                            </DropdownMenuItem>
+                            </div>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
