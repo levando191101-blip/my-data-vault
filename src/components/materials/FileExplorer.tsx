@@ -273,7 +273,7 @@ function DraggableFolderCard({
     data: { type: "folder", id: category.id, data: category },
   });
 
-  // List mode: horizontal compact card
+  // List mode: full-width horizontal card
   if (viewMode === "list") {
     return (
       <Card
@@ -282,29 +282,29 @@ function DraggableFolderCard({
           setDragRef(el);
         }}
         className={cn(
-          "cursor-pointer transition-all hover:shadow-md group w-fit",
+          "cursor-pointer transition-all hover:shadow-md group",
           isOver && "ring-2 ring-primary bg-primary/10 shadow-lg",
           isDragging && "opacity-50"
         )}
         onDoubleClick={onClick}
       >
-        <CardContent className="p-2 flex items-center gap-2">
+        <CardContent className="p-3 flex items-center gap-3">
           <button
             {...attributes}
             {...listeners}
-            className="cursor-grab active:cursor-grabbing p-0.5 rounded hover:bg-muted transition-colors opacity-0 group-hover:opacity-100"
+            className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors"
             onClick={(e) => e.stopPropagation()}
           >
-            <GripVertical className="h-3 w-3 text-muted-foreground" />
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
           </button>
           <div 
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 cursor-pointer"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 cursor-pointer"
             onClick={onClick}
           >
-            <Folder className="h-4 w-4 text-primary" />
+            <Folder className="h-5 w-5 text-primary" />
           </div>
           <span 
-            className="text-sm font-medium cursor-pointer whitespace-nowrap" 
+            className="text-sm font-medium cursor-pointer flex-1" 
             onClick={onClick}
           >
             {category.name}
@@ -314,10 +314,10 @@ function DraggableFolderCard({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
                 onClick={(e) => e.stopPropagation()}
               >
-                <MoreHorizontal className="h-3 w-3" />
+                <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-popover">
@@ -340,7 +340,7 @@ function DraggableFolderCard({
     );
   }
 
-  // Grid mode: vertical card
+  // Grid mode: horizontal compact card
   return (
     <Card
       ref={(el) => {
@@ -354,56 +354,54 @@ function DraggableFolderCard({
       )}
       onDoubleClick={onClick}
     >
-      <CardContent className="p-3 flex flex-col items-center gap-2">
-        <div className="w-full flex items-center justify-between">
-          <button
-            {...attributes}
-            {...listeners}
-            className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors opacity-0 group-hover:opacity-100"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <GripVertical className="h-4 w-4 text-muted-foreground" />
-          </button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-popover">
-              <DropdownMenuItem onClick={() => onEdit(category)}>
-                <Pencil className="mr-2 h-4 w-4" />
-                重命名
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onAddSub(category)}>
-                <FolderPlus className="mr-2 h-4 w-4" />
-                新建子文件夹
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onDelete(category)} className="text-destructive">
-                <Trash2 className="mr-2 h-4 w-4" />
-                删除
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+      <CardContent className="p-3 flex items-center gap-3">
+        <button
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </button>
         <div 
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 cursor-pointer"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 cursor-pointer"
           onClick={onClick}
         >
-          <Folder className="h-6 w-6 text-primary" />
+          <Folder className="h-5 w-5 text-primary" />
         </div>
-        <p 
-          className="text-sm font-medium text-center w-full px-1 cursor-pointer line-clamp-2" 
+        <span 
+          className="text-sm font-medium cursor-pointer truncate flex-1 min-w-0" 
           title={category.name}
           onClick={onClick}
         >
           {category.name}
-        </p>
+        </span>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-popover">
+            <DropdownMenuItem onClick={() => onEdit(category)}>
+              <Pencil className="mr-2 h-4 w-4" />
+              重命名
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onAddSub(category)}>
+              <FolderPlus className="mr-2 h-4 w-4" />
+              新建子文件夹
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onDelete(category)} className="text-destructive">
+              <Trash2 className="mr-2 h-4 w-4" />
+              删除
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </CardContent>
     </Card>
   );
@@ -786,8 +784,8 @@ export function FileExplorer({
                   <h4 className="text-sm font-medium text-muted-foreground mb-3">文件夹</h4>
                   <div className={cn(
                     viewMode === "grid" 
-                      ? "grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
-                      : "flex flex-wrap gap-3"
+                      ? "grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                      : "space-y-2"
                   )}>
                     {childCategories.map((cat) => (
                       <DraggableFolderCard
