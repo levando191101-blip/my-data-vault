@@ -28,9 +28,17 @@ export function MaterialPreviewDialog({
 
   const publicUrl = data?.publicUrl;
 
-  const handleDownload = () => {
+  const handleDownload = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (publicUrl) {
-      window.open(publicUrl, "_blank");
+      const link = document.createElement("a");
+      link.href = publicUrl;
+      link.download = material.file_name;
+      link.target = "_blank";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   };
 
