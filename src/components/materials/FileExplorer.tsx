@@ -803,6 +803,31 @@ export function FileExplorer({
     }
   };
 
+  const handleMoveMaterial = async (materialId: string, targetCategoryId: string | null) => {
+    const material = materials.find(m => m.id === materialId);
+    if (!material || material.category_id === targetCategoryId) return;
+    
+    setIsSaving(true);
+    try {
+      await supabase
+        .from("materials")
+        .update({ category_id: targetCategoryId })
+        .eq("id", materialId);
+      
+      const targetName = targetCategoryId 
+        ? categories.find(c => c.id === targetCategoryId)?.name || "目标文件夹"
+        : "根目录";
+      toast({ title: `已移动到「${targetName}」` });
+      onReorder(materials.map(m => 
+        m.id === materialId ? { ...m, category_id: targetCategoryId } : m
+      ));
+    } catch (error) {
+      toast({ title: "移动失败", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const openCreateDialog = (parent: Category | null = null) => {
     setDialogType("create");
     setParentCategory(parent);
@@ -1459,6 +1484,7 @@ export function FileExplorer({
                           onDelete={onDelete}
                           onSave={onSave}
                           onPreview={onPreview}
+                          onMoveTo={handleMoveMaterial}
                           selectionMode={selectionMode}
                           isSelected={selectedMaterials.has(material.id)}
                           onSelect={handleSelectMaterial}
