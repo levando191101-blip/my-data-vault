@@ -583,12 +583,23 @@ function DraggableFolderCard({
           >
             <CardContent className="p-3 flex items-center gap-3">
               {selectionMode ? (
-                <div className="p-1">
+                <div className="flex items-center gap-1">
                   <Checkbox 
                     checked={isSelected}
                     onCheckedChange={(checked) => onSelect?.(category.id, !!checked)}
                     onClick={(e) => e.stopPropagation()}
                   />
+                  {isSelected && (
+                    <button
+                      {...attributes}
+                      {...listeners}
+                      className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                      title="拖拽移动选中项"
+                    >
+                      <GripVertical className="h-4 w-4 text-primary" />
+                    </button>
+                  )}
                 </div>
               ) : (
                 <button
@@ -673,12 +684,23 @@ function DraggableFolderCard({
         >
           <CardContent className="p-3 flex items-center gap-3">
             {selectionMode ? (
-              <div className="p-1">
+              <div className="flex items-center gap-1">
                 <Checkbox 
                   checked={isSelected}
                   onCheckedChange={(checked) => onSelect?.(category.id, !!checked)}
                   onClick={(e) => e.stopPropagation()}
                 />
+                {isSelected && (
+                  <button
+                    {...attributes}
+                    {...listeners}
+                    className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                    title="拖拽移动选中项"
+                  >
+                    <GripVertical className="h-4 w-4 text-primary" />
+                  </button>
+                )}
               </div>
             ) : (
               <button
