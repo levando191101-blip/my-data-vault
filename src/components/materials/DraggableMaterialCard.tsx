@@ -46,6 +46,7 @@ import {
   Folder,
   FolderOpen,
   FolderSymlink,
+  Copy,
 } from "lucide-react";
 import { Material } from "@/hooks/useMaterials";
 import { supabase } from "@/integrations/supabase/client";
@@ -59,6 +60,7 @@ interface DraggableMaterialCardProps {
   onSave: (id: string, data: { title: string; categoryId: string | null; tagIds: string[] }) => Promise<boolean>;
   onPreview?: (material: Material) => void;
   onMoveTo?: (materialId: string, categoryId: string | null) => void;
+  onCopyTo?: (materialId: string, categoryId: string | null) => void;
   isDragging?: boolean;
   isSelected?: boolean;
   onSelect?: (id: string, selected: boolean) => void;
@@ -113,6 +115,7 @@ export function DraggableMaterialCard({
   onSave,
   onPreview,
   onMoveTo,
+  onCopyTo,
   isSelected = false,
   onSelect,
   selectionMode = false,
@@ -235,6 +238,35 @@ export function DraggableMaterialCard({
                 key={cat.id}
                 onClick={() => onMoveTo(material.id, cat.id)}
                 disabled={material.category_id === cat.id}
+              >
+                <Folder className="mr-2 h-4 w-4" />
+                <span className="truncate">{"　".repeat(cat.level)}{cat.name}</span>
+              </ContextMenuItem>
+            ))}
+            {flatCats.length === 0 && (
+              <ContextMenuItem disabled>
+                <span className="text-muted-foreground text-xs">没有可用的目标文件夹</span>
+              </ContextMenuItem>
+            )}
+          </ContextMenuSubContent>
+        </ContextMenuSub>
+      )}
+      {onCopyTo && (
+        <ContextMenuSub>
+          <ContextMenuSubTrigger>
+            <Copy className="mr-2 h-4 w-4" />
+            复制到...
+          </ContextMenuSubTrigger>
+          <ContextMenuSubContent className="bg-popover w-48 max-h-64 overflow-y-auto">
+            <ContextMenuItem onClick={() => onCopyTo(material.id, null)}>
+              <FolderOpen className="mr-2 h-4 w-4" />
+              根目录
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            {flatCats.map(cat => (
+              <ContextMenuItem 
+                key={cat.id}
+                onClick={() => onCopyTo(material.id, cat.id)}
               >
                 <Folder className="mr-2 h-4 w-4" />
                 <span className="truncate">{"　".repeat(cat.level)}{cat.name}</span>

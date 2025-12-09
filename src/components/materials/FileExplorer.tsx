@@ -90,6 +90,7 @@ import { Category, useCategories } from "@/hooks/useCategories";
 import { DraggableMaterialCard } from "./DraggableMaterialCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 
 interface FileExplorerProps {
@@ -190,6 +191,7 @@ function DraggableFolderNode({
   onDelete,
   onAddSub,
   onMoveTo,
+  onCopyTo,
   allCategories,
 }: {
   node: Category & { children: (Category & { children: any[] })[] };
@@ -202,6 +204,7 @@ function DraggableFolderNode({
   onDelete: (cat: Category) => void;
   onAddSub: (cat: Category) => void;
   onMoveTo: (folderId: string, targetParentId: string | null) => void;
+  onCopyTo: (folderId: string, targetParentId: string | null) => void;
   allCategories: Category[];
 }) {
   const { setNodeRef: setDropRef, isOver } = useDroppable({
@@ -350,6 +353,33 @@ function DraggableFolderNode({
               )}
             </ContextMenuSubContent>
           </ContextMenuSub>
+          <ContextMenuSub>
+            <ContextMenuSubTrigger>
+              <Copy className="mr-2 h-4 w-4" />
+              复制到...
+            </ContextMenuSubTrigger>
+            <ContextMenuSubContent className="bg-popover w-48 max-h-64 overflow-y-auto">
+              <ContextMenuItem onClick={() => onCopyTo(node.id, null)}>
+                <FolderOpen className="mr-2 h-4 w-4" />
+                根目录
+              </ContextMenuItem>
+              <ContextMenuSeparator />
+              {moveTargets.map(target => (
+                <ContextMenuItem 
+                  key={target.id}
+                  onClick={() => onCopyTo(node.id, target.id)}
+                >
+                  <Folder className="mr-2 h-4 w-4" />
+                  <span className="truncate">{target.name}</span>
+                </ContextMenuItem>
+              ))}
+              {moveTargets.length === 0 && (
+                <ContextMenuItem disabled>
+                  <span className="text-muted-foreground text-xs">没有可用的目标文件夹</span>
+                </ContextMenuItem>
+              )}
+            </ContextMenuSubContent>
+          </ContextMenuSub>
           <ContextMenuSeparator />
           <ContextMenuItem onClick={() => onDelete(node)} className="text-destructive">
             <Trash2 className="mr-2 h-4 w-4" />
@@ -372,6 +402,7 @@ function DraggableFolderNode({
               onDelete={onDelete}
               onAddSub={onAddSub}
               onMoveTo={onMoveTo}
+              onCopyTo={onCopyTo}
               allCategories={allCategories}
             />
           ))}
@@ -389,6 +420,7 @@ function DraggableFolderCard({
   onDelete,
   onAddSub,
   onMoveTo,
+  onCopyTo,
   allCategories,
   viewMode = "grid",
   selectionMode = false,
@@ -401,6 +433,7 @@ function DraggableFolderCard({
   onDelete: (cat: Category) => void;
   onAddSub: (cat: Category) => void;
   onMoveTo: (folderId: string, targetParentId: string | null) => void;
+  onCopyTo: (folderId: string, targetParentId: string | null) => void;
   allCategories: Category[];
   viewMode?: "grid" | "list";
   selectionMode?: boolean;
@@ -465,6 +498,33 @@ function DraggableFolderCard({
               key={target.id}
               onClick={() => onMoveTo(category.id, target.id)}
               disabled={category.parent_id === target.id}
+            >
+              <Folder className="mr-2 h-4 w-4" />
+              <span className="truncate">{target.name}</span>
+            </ContextMenuItem>
+          ))}
+          {moveTargets.length === 0 && (
+            <ContextMenuItem disabled>
+              <span className="text-muted-foreground text-xs">没有可用的目标文件夹</span>
+            </ContextMenuItem>
+          )}
+        </ContextMenuSubContent>
+      </ContextMenuSub>
+      <ContextMenuSub>
+        <ContextMenuSubTrigger>
+          <Copy className="mr-2 h-4 w-4" />
+          复制到...
+        </ContextMenuSubTrigger>
+        <ContextMenuSubContent className="bg-popover w-48 max-h-64 overflow-y-auto">
+          <ContextMenuItem onClick={() => onCopyTo(category.id, null)}>
+            <FolderOpen className="mr-2 h-4 w-4" />
+            根目录
+          </ContextMenuItem>
+          <ContextMenuSeparator />
+          {moveTargets.map(target => (
+            <ContextMenuItem 
+              key={target.id}
+              onClick={() => onCopyTo(category.id, target.id)}
             >
               <Folder className="mr-2 h-4 w-4" />
               <span className="truncate">{target.name}</span>
@@ -701,6 +761,7 @@ export function FileExplorer({
   onCategoriesRefresh,
 }: FileExplorerProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const { createCategory, updateCategory, deleteCategory } = useCategories();
   
   const [layoutMode, setLayoutMode] = useState<"dual" | "single">("dual");
@@ -823,6 +884,107 @@ export function FileExplorer({
       ));
     } catch (error) {
       toast({ title: "移动失败", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCopyMaterial = async (materialId: string, targetCategoryId: string | null) => {
+    const material = materials.find(m => m.id === materialId);
+    if (!material || !user) return;
+    
+    setIsSaving(true);
+    try {
+      // Download the file
+      const { data: fileData, error: downloadError } = await supabase.storage
+        .from("materials")
+        .download(material.file_path);
+      
+      if (downloadError || !fileData) {
+        throw new Error("下载文件失败");
+      }
+
+      // Generate new file path
+      const timestamp = Date.now();
+      const newFileName = `${timestamp}_${material.file_name}`;
+      const newFilePath = `${user.id}/${newFileName}`;
+
+      // Upload the copy
+      const { error: uploadError } = await supabase.storage
+        .from("materials")
+        .upload(newFilePath, fileData);
+
+      if (uploadError) {
+        throw new Error("上传文件失败");
+      }
+
+      // Create new material record
+      const { error: insertError } = await supabase
+        .from("materials")
+        .insert({
+          user_id: user.id,
+          title: `${material.title} (副本)`,
+          file_name: material.file_name,
+          file_path: newFilePath,
+          file_type: material.file_type,
+          file_size: material.file_size,
+          mime_type: material.mime_type,
+          category_id: targetCategoryId,
+        });
+
+      if (insertError) {
+        throw new Error("创建记录失败");
+      }
+
+      const targetName = targetCategoryId 
+        ? categories.find(c => c.id === targetCategoryId)?.name || "目标文件夹"
+        : "根目录";
+      toast({ title: `已复制到「${targetName}」` });
+      onReorder([...materials]); // Trigger refresh
+    } catch (error) {
+      toast({ title: error instanceof Error ? error.message : "复制失败", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCopyFolder = async (folderId: string, targetParentId: string | null) => {
+    const folder = categories.find(c => c.id === folderId);
+    if (!folder || !user) return;
+    
+    // Prevent copying folder to itself or its children
+    const isDescendant = (parentId: string, childId: string): boolean => {
+      const child = categories.find(c => c.id === childId);
+      if (!child) return false;
+      if (child.id === parentId) return true;
+      if (child.parent_id) return isDescendant(parentId, child.parent_id);
+      return false;
+    };
+    
+    if (targetParentId && isDescendant(folderId, targetParentId)) {
+      toast({ title: "不能复制到自身的子文件夹中", variant: "destructive" });
+      return;
+    }
+    
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from("categories")
+        .insert({
+          user_id: user.id,
+          name: `${folder.name} (副本)`,
+          parent_id: targetParentId,
+        });
+
+      if (error) throw error;
+
+      const targetName = targetParentId 
+        ? categories.find(c => c.id === targetParentId)?.name || "目标文件夹"
+        : "根目录";
+      toast({ title: `已复制到「${targetName}」` });
+      onCategoriesRefresh?.();
+    } catch (error) {
+      toast({ title: "复制失败", variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
@@ -1208,6 +1370,7 @@ export function FileExplorer({
                     onDelete={handleDeleteCategory}
                     onAddSub={openCreateDialog}
                     onMoveTo={handleMoveFolder}
+                    onCopyTo={handleCopyFolder}
                     allCategories={categories}
                   />
                 ))}
@@ -1379,6 +1542,7 @@ export function FileExplorer({
                         onDelete={handleDeleteCategory}
                         onAddSub={openCreateDialog}
                         onMoveTo={handleMoveFolder}
+                        onCopyTo={handleCopyFolder}
                         allCategories={categories}
                         viewMode={folderViewMode}
                         selectionMode={selectionMode}
@@ -1485,6 +1649,7 @@ export function FileExplorer({
                           onSave={onSave}
                           onPreview={onPreview}
                           onMoveTo={handleMoveMaterial}
+                          onCopyTo={handleCopyMaterial}
                           selectionMode={selectionMode}
                           isSelected={selectedMaterials.has(material.id)}
                           onSelect={handleSelectMaterial}
