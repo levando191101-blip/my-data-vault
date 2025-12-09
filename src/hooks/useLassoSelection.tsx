@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 interface LassoRect {
   x: number;
@@ -9,7 +9,7 @@ interface LassoRect {
 
 interface UseLassoSelectionOptions {
   containerRef: React.RefObject<HTMLElement>;
-  onSelectionChange?: (selectedIds: Set<string>) => void;
+  onSelectionComplete?: (selectedIds: Set<string>) => void;
   itemSelector: string;
   getItemId: (element: Element) => string | null;
   enabled?: boolean;
@@ -18,13 +18,13 @@ interface UseLassoSelectionOptions {
 interface UseLassoSelectionResult {
   isLassoActive: boolean;
   lassoRect: LassoRect | null;
-  selectedIds: Set<string>;
+  pendingSelectedIds: Set<string>;
   clearSelection: () => void;
 }
 
 export function useLassoSelection({
   containerRef,
-  onSelectionChange,
+  onSelectionComplete,
   itemSelector,
   getItemId,
   enabled = true,
@@ -32,7 +32,7 @@ export function useLassoSelection({
   const [isLassoActive, setIsLassoActive] = useState(false);
   const [lassoStart, setLassoStart] = useState<{ x: number; y: number } | null>(null);
   const [lassoEnd, setLassoEnd] = useState<{ x: number; y: number } | null>(null);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [pendingSelectedIds, setPendingSelectedIds] = useState<Set<string>>(new Set());
 
   // Calculate lasso rectangle in viewport coordinates (for display)
   const lassoRect: LassoRect | null = lassoStart && lassoEnd ? {
@@ -52,14 +52,13 @@ export function useLassoSelection({
     );
   }, []);
 
-  // Update selection based on lasso rectangle
-  const updateSelection = useCallback(() => {
+  // Update pending selection based on lasso rectangle (visual feedback only)
+  const updatePendingSelection = useCallback(() => {
     if (!lassoRect || !containerRef.current) return;
 
     const container = containerRef.current;
     const containerRect = container.getBoundingClientRect();
 
-    // Convert lasso rect (which is in container-relative coords) to viewport coords for comparison
     const lassoViewportRect = {
       left: containerRect.left + lassoRect.x,
       top: containerRect.top + lassoRect.y,
@@ -80,16 +79,15 @@ export function useLassoSelection({
       }
     });
 
-    setSelectedIds(newSelectedIds);
-    onSelectionChange?.(newSelectedIds);
-  }, [lassoRect, containerRef, itemSelector, getItemId, onSelectionChange, rectsIntersect]);
+    setPendingSelectedIds(newSelectedIds);
+  }, [lassoRect, containerRef, itemSelector, getItemId, rectsIntersect]);
 
-  // Update selection whenever lasso changes
+  // Update pending selection whenever lasso changes
   useEffect(() => {
     if (isLassoActive) {
-      updateSelection();
+      updatePendingSelection();
     }
-  }, [isLassoActive, lassoRect, updateSelection]);
+  }, [isLassoActive, lassoRect, updatePendingSelection]);
 
   // Handle all mouse events
   useEffect(() => {
@@ -99,10 +97,8 @@ export function useLassoSelection({
     if (!container) return;
 
     const handleMouseDown = (e: MouseEvent) => {
-      // Only activate with Shift key held
       if (!e.shiftKey) return;
       
-      // Don't activate if clicking on interactive elements
       const target = e.target as HTMLElement;
       if (
         target.closest('button') ||
@@ -117,15 +113,13 @@ export function useLassoSelection({
       }
 
       const containerRect = container.getBoundingClientRect();
-      
-      // Calculate position relative to container
       const x = e.clientX - containerRect.left;
       const y = e.clientY - containerRect.top;
 
       setLassoStart({ x, y });
       setLassoEnd({ x, y });
       setIsLassoActive(true);
-      setSelectedIds(new Set());
+      setPendingSelectedIds(new Set());
       
       e.preventDefault();
     };
@@ -134,8 +128,6 @@ export function useLassoSelection({
       if (!isLassoActive || !lassoStart) return;
 
       const containerRect = container.getBoundingClientRect();
-      
-      // Calculate position relative to container, clamped to container bounds
       const x = Math.max(0, Math.min(e.clientX - containerRect.left, containerRect.width));
       const y = Math.max(0, Math.min(e.clientY - containerRect.top, containerRect.height));
 
@@ -144,9 +136,14 @@ export function useLassoSelection({
 
     const handleMouseUp = () => {
       if (isLassoActive) {
+        // Finalize selection on mouseup
+        if (pendingSelectedIds.size > 0) {
+          onSelectionComplete?.(pendingSelectedIds);
+        }
         setIsLassoActive(false);
         setLassoStart(null);
         setLassoEnd(null);
+        setPendingSelectedIds(new Set());
       }
     };
 
@@ -159,17 +156,16 @@ export function useLassoSelection({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [enabled, containerRef, isLassoActive, lassoStart]);
+  }, [enabled, containerRef, isLassoActive, lassoStart, pendingSelectedIds, onSelectionComplete]);
 
   const clearSelection = useCallback(() => {
-    setSelectedIds(new Set());
-    onSelectionChange?.(new Set());
-  }, [onSelectionChange]);
+    setPendingSelectedIds(new Set());
+  }, []);
 
   return {
     isLassoActive,
     lassoRect,
-    selectedIds,
+    pendingSelectedIds,
     clearSelection,
   };
 }
