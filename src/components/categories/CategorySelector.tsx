@@ -166,8 +166,16 @@ function BadgeSelector({
 function CardGridSelector({ 
   categories, 
   selectedCategory, 
-  onCategoryChange 
-}: CategorySelectorProps) {
+  onCategoryChange,
+  editable,
+  onEdit,
+  onDelete,
+  onAddSub,
+}: CategorySelectorProps & {
+  onEdit?: (cat: Category) => void;
+  onDelete?: (cat: Category) => void;
+  onAddSub?: (cat: Category) => void;
+}) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
       <Card 
@@ -186,7 +194,7 @@ function CardGridSelector({
         <Card 
           key={category.id}
           className={cn(
-            "cursor-pointer transition-all hover:shadow-md",
+            "cursor-pointer transition-all hover:shadow-md group relative",
             selectedCategory === category.id && "ring-2 ring-primary"
           )}
           onClick={() => onCategoryChange(category.id)}
@@ -197,6 +205,37 @@ function CardGridSelector({
               {category.name}
             </span>
           </CardContent>
+          {editable && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-popover">
+                <DropdownMenuItem onClick={() => onEdit?.(category)}>
+                  <Pencil className="mr-2 h-3 w-3" />
+                  编辑
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onAddSub?.(category)}>
+                  <FolderPlus className="mr-2 h-3 w-3" />
+                  添加子分类
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => onDelete?.(category)}
+                  className="text-destructive"
+                >
+                  <Trash2 className="mr-2 h-3 w-3" />
+                  删除
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </Card>
       ))}
     </div>
@@ -208,21 +247,61 @@ function TreeNode({
   node, 
   selectedCategory, 
   onCategoryChange, 
-  level = 0 
+  level = 0,
+  editable,
+  onEdit,
+  onDelete,
+  onAddSub,
 }: { 
   node: Category & { children: Category[] }; 
   selectedCategory: string | null; 
   onCategoryChange: (id: string | null) => void;
   level?: number;
+  editable?: boolean;
+  onEdit?: (cat: Category) => void;
+  onDelete?: (cat: Category) => void;
+  onAddSub?: (cat: Category) => void;
 }) {
   const [open, setOpen] = useState(true);
   const hasChildren = node.children.length > 0;
+
+  const actionButton = editable && (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="bg-popover">
+        <DropdownMenuItem onClick={() => onEdit?.(node)}>
+          <Pencil className="mr-2 h-3 w-3" />
+          编辑
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onAddSub?.(node)}>
+          <FolderPlus className="mr-2 h-3 w-3" />
+          添加子分类
+        </DropdownMenuItem>
+        <DropdownMenuItem 
+          onClick={() => onDelete?.(node)}
+          className="text-destructive"
+        >
+          <Trash2 className="mr-2 h-3 w-3" />
+          删除
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   return (
     <div className="space-y-1">
       {hasChildren ? (
         <Collapsible open={open} onOpenChange={setOpen}>
-          <div className="flex items-center gap-1" style={{ paddingLeft: level * 16 }}>
+          <div className="flex items-center gap-1 group" style={{ paddingLeft: level * 16 }}>
             <CollapsibleTrigger asChild>
               <Button variant="ghost" size="icon" className="h-6 w-6">
                 <ChevronRight className={cn("h-4 w-4 transition-transform", open && "rotate-90")} />
@@ -237,6 +316,7 @@ function TreeNode({
               <Folder className="mr-2 h-4 w-4" />
               {node.name}
             </Button>
+            {actionButton}
           </div>
           <CollapsibleContent>
             {node.children.map((child) => (
@@ -246,12 +326,16 @@ function TreeNode({
                 selectedCategory={selectedCategory}
                 onCategoryChange={onCategoryChange}
                 level={level + 1}
+                editable={editable}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onAddSub={onAddSub}
               />
             ))}
           </CollapsibleContent>
         </Collapsible>
       ) : (
-        <div className="flex items-center gap-1" style={{ paddingLeft: level * 16 + 28 }}>
+        <div className="flex items-center gap-1 group" style={{ paddingLeft: level * 16 + 28 }}>
           <Button
             variant={selectedCategory === node.id ? "secondary" : "ghost"}
             size="sm"
@@ -261,6 +345,7 @@ function TreeNode({
             <Folder className="mr-2 h-4 w-4" />
             {node.name}
           </Button>
+          {actionButton}
         </div>
       )}
     </div>
@@ -270,8 +355,16 @@ function TreeNode({
 function TreeListSelector({ 
   categories, 
   selectedCategory, 
-  onCategoryChange 
-}: CategorySelectorProps) {
+  onCategoryChange,
+  editable,
+  onEdit,
+  onDelete,
+  onAddSub,
+}: CategorySelectorProps & {
+  onEdit?: (cat: Category) => void;
+  onDelete?: (cat: Category) => void;
+  onAddSub?: (cat: Category) => void;
+}) {
   const { roots, map } = buildCategoryTree(categories);
 
   return (
@@ -291,6 +384,10 @@ function TreeListSelector({
           node={root}
           selectedCategory={selectedCategory}
           onCategoryChange={onCategoryChange}
+          editable={editable}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onAddSub={onAddSub}
         />
       ))}
     </div>
@@ -301,8 +398,16 @@ function TreeListSelector({
 function BreadcrumbSelector({ 
   categories, 
   selectedCategory, 
-  onCategoryChange 
-}: CategorySelectorProps) {
+  onCategoryChange,
+  editable,
+  onEdit,
+  onDelete,
+  onAddSub,
+}: CategorySelectorProps & {
+  onEdit?: (cat: Category) => void;
+  onDelete?: (cat: Category) => void;
+  onAddSub?: (cat: Category) => void;
+}) {
   const path = getCategoryPath(selectedCategory, categories);
   const { roots, map } = buildCategoryTree(categories);
   
@@ -324,7 +429,7 @@ function BreadcrumbSelector({
             </BreadcrumbLink>
           </BreadcrumbItem>
           {path.map((cat, index) => (
-            <BreadcrumbItem key={cat.id}>
+            <BreadcrumbItem key={cat.id} className="group">
               <BreadcrumbSeparator />
               <BreadcrumbLink 
                 className={cn("cursor-pointer", index === path.length - 1 && "font-bold")}
@@ -332,6 +437,36 @@ function BreadcrumbSelector({
               >
                 {cat.name}
               </BreadcrumbLink>
+              {editable && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity ml-1"
+                    >
+                      <MoreHorizontal className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-popover">
+                    <DropdownMenuItem onClick={() => onEdit?.(cat)}>
+                      <Pencil className="mr-2 h-3 w-3" />
+                      编辑
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onAddSub?.(cat)}>
+                      <FolderPlus className="mr-2 h-3 w-3" />
+                      添加子分类
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => onDelete?.(cat)}
+                      className="text-destructive"
+                    >
+                      <Trash2 className="mr-2 h-3 w-3" />
+                      删除
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </BreadcrumbItem>
           ))}
         </BreadcrumbList>
@@ -340,15 +475,47 @@ function BreadcrumbSelector({
       {showCategories.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {showCategories.map((cat) => (
-            <Button
-              key={cat.id}
-              variant="outline"
-              size="sm"
-              onClick={() => onCategoryChange(cat.id)}
-            >
-              <Folder className="mr-2 h-4 w-4" />
-              {cat.name}
-            </Button>
+            <div key={cat.id} className="relative group">
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(editable && "pr-8")}
+                onClick={() => onCategoryChange(cat.id)}
+              >
+                <Folder className="mr-2 h-4 w-4" />
+                {cat.name}
+              </Button>
+              {editable && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <MoreHorizontal className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-popover">
+                    <DropdownMenuItem onClick={() => onEdit?.(cat)}>
+                      <Pencil className="mr-2 h-3 w-3" />
+                      编辑
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onAddSub?.(cat)}>
+                      <FolderPlus className="mr-2 h-3 w-3" />
+                      添加子分类
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => onDelete?.(cat)}
+                      className="text-destructive"
+                    >
+                      <Trash2 className="mr-2 h-3 w-3" />
+                      删除
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
           ))}
         </div>
       )}
@@ -483,21 +650,33 @@ export function CategorySelector({
             <CardGridSelector 
               categories={categories} 
               selectedCategory={selectedCategory} 
-              onCategoryChange={onCategoryChange} 
+              onCategoryChange={onCategoryChange}
+              editable={editMode}
+              onEdit={openEditDialog}
+              onDelete={handleDelete}
+              onAddSub={openCreateDialog}
             />
           )}
           {viewMode === "tree" && (
             <TreeListSelector 
               categories={categories} 
               selectedCategory={selectedCategory} 
-              onCategoryChange={onCategoryChange} 
+              onCategoryChange={onCategoryChange}
+              editable={editMode}
+              onEdit={openEditDialog}
+              onDelete={handleDelete}
+              onAddSub={openCreateDialog}
             />
           )}
           {viewMode === "breadcrumb" && (
             <BreadcrumbSelector 
               categories={categories} 
               selectedCategory={selectedCategory} 
-              onCategoryChange={onCategoryChange} 
+              onCategoryChange={onCategoryChange}
+              editable={editMode}
+              onEdit={openEditDialog}
+              onDelete={handleDelete}
+              onAddSub={openCreateDialog}
             />
           )}
         </>
