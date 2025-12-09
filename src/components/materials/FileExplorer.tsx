@@ -1110,6 +1110,20 @@ export function FileExplorer({
     setSelectionMode(!selectionMode);
   };
 
+  // ESC key to cancel selection
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && selectionMode) {
+        setSelectedMaterials(new Set());
+        setSelectedFolders(new Set());
+        setSelectionMode(false);
+      }
+    };
+    
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectionMode]);
+
   const handleSelectMaterial = (id: string, selected: boolean) => {
     setSelectedMaterials(prev => {
       const next = new Set(prev);
