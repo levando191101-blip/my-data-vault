@@ -97,47 +97,42 @@ export function MaterialCard({ material, onDelete, onEdit, onPreview }: Material
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                <DropdownMenuContent align="end" onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}>
                   {onPreview && (material.file_type === "image" || material.file_type === "pdf" || material.mime_type === "application/pdf") && (
                     <div
-                      className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
-                      style={{ cursor: 'pointer' }}
-                      onClick={(e) => { e.stopPropagation(); onPreview(material); }}
+                      className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                      onClick={(e) => { e.stopPropagation(); e.preventDefault(); onPreview(material); }}
                     >
                       <Eye className="mr-2 h-4 w-4" />
                       预览
                     </div>
                   )}
                   <div
-                    className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
-                    style={{ cursor: 'pointer' }}
-                    onClick={(e) => { e.stopPropagation(); handleOpen(); }}
+                    className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                    onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleOpen(); }}
                   >
                     <ExternalLink className="mr-2 h-4 w-4" />
                     打开
                   </div>
                   <div
-                    className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
-                    style={{ cursor: 'pointer' }}
-                    onClick={(e) => { e.stopPropagation(); handleDownload(); }}
+                    className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                    onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleDownload(); }}
                   >
                     <Download className="mr-2 h-4 w-4" />
                     下载
                   </div>
                   {onEdit && (
                     <div
-                      className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
-                      style={{ cursor: 'pointer' }}
-                      onClick={(e) => { e.stopPropagation(); onEdit(material); }}
+                      className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                      onClick={(e) => { e.stopPropagation(); e.preventDefault(); onEdit(material); }}
                     >
                       <Pencil className="mr-2 h-4 w-4" />
                       编辑
                     </div>
                   )}
                   <div
-                    className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground text-destructive"
-                    style={{ cursor: 'pointer' }}
-                    onClick={(e) => { e.stopPropagation(); onDelete(material.id, material.file_path); }}
+                    className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground text-destructive"
+                    onClick={(e) => { e.stopPropagation(); e.preventDefault(); onDelete(material.id, material.file_path); }}
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
                     删除
