@@ -22,7 +22,7 @@ import {
 
 export default function Materials() {
   const { materials, loading, deleteMaterial, updateMaterial } = useMaterials();
-  const { categories } = useCategories();
+  const { categories, refetch: refetchCategories } = useCategories();
   const { tags } = useTags();
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -111,6 +111,7 @@ export default function Materials() {
           onTagToggle={handleTagToggle}
           onClearFilters={handleClearFilters}
           editableCategories={true}
+          onCategoriesRefresh={refetchCategories}
         />
       )}
 

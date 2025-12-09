@@ -19,6 +19,7 @@ interface MaterialFiltersProps {
   onTagToggle: (tagId: string) => void;
   onClearFilters: () => void;
   editableCategories?: boolean;
+  onCategoriesRefresh?: () => void;
 }
 
 export function MaterialFilters({
@@ -30,6 +31,7 @@ export function MaterialFilters({
   onTagToggle,
   onClearFilters,
   editableCategories = false,
+  onCategoriesRefresh,
 }: MaterialFiltersProps) {
   const hasFilters = selectedCategory || selectedTags.length > 0;
 
@@ -40,6 +42,7 @@ export function MaterialFilters({
         selectedCategory={selectedCategory}
         onCategoryChange={onCategoryChange}
         editable={editableCategories}
+        onRefresh={onCategoriesRefresh}
       />
 
       {tags.length > 0 && (
