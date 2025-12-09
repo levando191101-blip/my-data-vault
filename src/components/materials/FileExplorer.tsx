@@ -255,7 +255,6 @@ function DraggableFolderCard({
   onDelete,
   onAddSub,
   viewMode = "grid",
-  iconScale = 1,
 }: {
   category: Category;
   onClick: () => void;
@@ -263,7 +262,6 @@ function DraggableFolderCard({
   onDelete: (cat: Category) => void;
   onAddSub: (cat: Category) => void;
   viewMode?: "grid" | "list";
-  iconScale?: number;
 }) {
   const { setNodeRef: setDropRef, isOver } = useDroppable({
     id: `card-folder-${category.id}`,
@@ -342,10 +340,7 @@ function DraggableFolderCard({
     );
   }
 
-  // Grid mode: vertical card with scalable icon
-  const iconSize = Math.round(24 * iconScale);
-  const containerSize = Math.round(48 * iconScale);
-
+  // Grid mode: vertical card
   return (
     <Card
       ref={(el) => {
@@ -397,11 +392,10 @@ function DraggableFolderCard({
           </DropdownMenu>
         </div>
         <div 
-          className="flex shrink-0 items-center justify-center rounded-lg bg-primary/10 cursor-pointer transition-all"
-          style={{ width: containerSize, height: containerSize }}
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 cursor-pointer"
           onClick={onClick}
         >
-          <Folder className="text-primary" style={{ width: iconSize, height: iconSize }} />
+          <Folder className="h-6 w-6 text-primary" />
         </div>
         <p 
           className="text-sm font-medium text-center w-full px-1 cursor-pointer line-clamp-2" 
@@ -464,25 +458,6 @@ export function FileExplorer({
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [activeItem, setActiveItem] = useState<DragItem | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [iconScale, setIconScale] = useState(1); // 0.5 to 2
-
-  // Handle wheel zoom for grid mode
-  const handleWheel = (e: React.WheelEvent) => {
-    if (viewMode === "grid" && e.ctrlKey) {
-      e.preventDefault();
-      const delta = e.deltaY > 0 ? -0.1 : 0.1;
-      setIconScale((prev) => Math.min(2, Math.max(0.5, prev + delta)));
-    }
-  };
-
-  // Calculate grid columns based on scale
-  const getGridCols = () => {
-    if (iconScale <= 0.6) return "grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12";
-    if (iconScale <= 0.8) return "grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10";
-    if (iconScale <= 1.2) return "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6";
-    if (iconScale <= 1.5) return "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5";
-    return "grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4";
-  };
 
   // Dialog states
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -803,23 +778,15 @@ export function FileExplorer({
           </div>
 
           {/* Content area */}
-          <ScrollArea className="flex-1" onWheel={handleWheel}>
+          <ScrollArea className="flex-1">
             <div className="p-4">
               {/* Show child folders */}
               {childCategories.length > 0 && (
                 <div className="mb-6">
-                  {viewMode === "grid" && (
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-sm font-medium text-muted-foreground">文件夹</h4>
-                      <span className="text-xs text-muted-foreground">Ctrl+滚轮缩放</span>
-                    </div>
-                  )}
-                  {viewMode === "list" && (
-                    <h4 className="text-sm font-medium text-muted-foreground mb-3">文件夹</h4>
-                  )}
+                  <h4 className="text-sm font-medium text-muted-foreground mb-3">文件夹</h4>
                   <div className={cn(
                     viewMode === "grid" 
-                      ? `grid gap-3 ${getGridCols()}`
+                      ? "grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
                       : "flex flex-wrap gap-3"
                   )}>
                     {childCategories.map((cat) => (
@@ -831,7 +798,6 @@ export function FileExplorer({
                         onDelete={handleDeleteCategory}
                         onAddSub={openCreateDialog}
                         viewMode={viewMode}
-                        iconScale={iconScale}
                       />
                     ))}
                   </div>
