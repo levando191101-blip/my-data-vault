@@ -62,23 +62,23 @@ export function MaterialCard({ material, onDelete, onEdit, onPreview }: Material
     }
   };
 
-  const handleOpen = (e?: React.MouseEvent) => {
-    e?.preventDefault();
-    e?.stopPropagation();
+  const handleOpen = () => {
     const { data } = supabase.storage
       .from("materials")
       .getPublicUrl(material.file_path);
 
     if (data?.publicUrl) {
-      setTimeout(() => {
-        const link = document.createElement("a");
-        link.href = data.publicUrl;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }, 0);
+      const url = data.publicUrl;
+      requestAnimationFrame(() => {
+        const newWindow = window.open(url, "_blank", "noopener,noreferrer");
+        if (!newWindow) {
+          const a = document.createElement("a");
+          a.href = url;
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
+          a.click();
+        }
+      });
     }
   };
 

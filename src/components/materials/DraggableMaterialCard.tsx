@@ -166,8 +166,20 @@ export function DraggableMaterialCard({
       .getPublicUrl(material.file_path);
 
     if (data?.publicUrl) {
-      // Open in new tab - this should not affect current page
-      window.open(data.publicUrl, "_blank", "noopener,noreferrer");
+      const url = data.publicUrl;
+      // Use requestAnimationFrame to completely escape React's event system
+      requestAnimationFrame(() => {
+        const newWindow = window.open(url, "_blank", "noopener,noreferrer");
+        // If popup was blocked, the return value will be null
+        if (!newWindow) {
+          // Fallback: navigate using location
+          const a = document.createElement("a");
+          a.href = url;
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
+          a.click();
+        }
+      });
     }
   };
 
