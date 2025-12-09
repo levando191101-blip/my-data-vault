@@ -142,23 +142,40 @@ export function DraggableMaterialCard({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const handleDownload = async () => {
+  const handleDownload = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
     const { data } = supabase.storage
       .from("materials")
       .getPublicUrl(material.file_path);
 
     if (data?.publicUrl) {
-      window.open(data.publicUrl, "_blank");
+      const link = document.createElement("a");
+      link.href = data.publicUrl;
+      link.download = material.file_name;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   };
 
-  const handleOpen = async () => {
+  const handleOpen = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
     const { data } = supabase.storage
       .from("materials")
       .getPublicUrl(material.file_path);
 
     if (data?.publicUrl) {
-      window.open(data.publicUrl, "_blank");
+      const link = document.createElement("a");
+      link.href = data.publicUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   };
 
