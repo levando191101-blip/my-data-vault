@@ -761,9 +761,9 @@ export function FileExplorer({
     const activeData = active.data.current as any;
     const overData = over.data.current as any;
     
-    // Check if dropping onto a folder
+    // Check if dropping onto a folder (including root where categoryId is null)
     if (overData?.type === "folder") {
-      const targetCategoryId = overData.categoryId as string;
+      const targetCategoryId = overData.categoryId as string | null;
       
       // If dragging a folder
       if (activeData?.type === "folder") {
@@ -781,7 +781,7 @@ export function FileExplorer({
           return false;
         };
         
-        if (isChild(folderId, targetCategoryId)) {
+        if (targetCategoryId && isChild(folderId, targetCategoryId)) {
           toast({
             title: "无法移动",
             description: "不能将文件夹移动到其子文件夹中",
