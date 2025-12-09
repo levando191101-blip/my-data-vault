@@ -316,12 +316,22 @@ export function DraggableMaterialCard({
               <div className="flex items-start gap-3">
                 {/* Selection checkbox or Drag handle */}
                 {selectionMode ? (
-                  <div className="mt-2 p-1">
+                  <div className="mt-2 flex items-center gap-1">
                     <Checkbox 
                       checked={isSelected}
                       onCheckedChange={(checked) => onSelect?.(material.id, !!checked)}
                       onClick={(e) => e.stopPropagation()}
                     />
+                    {isSelected && (
+                      <button
+                        {...attributes}
+                        {...listeners}
+                        className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors"
+                        title="拖拽移动选中项"
+                      >
+                        <GripVertical className="h-5 w-5 text-primary" />
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <button
