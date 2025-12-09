@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Folder, Plus, Pencil, Trash2, ChevronRight, ChevronDown } from "lucide-react";
+import { Folder, Plus, Pencil, Trash2, ChevronRight, ChevronDown, FolderPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -19,11 +19,13 @@ export function CategoryManager() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [parentForNew, setParentForNew] = useState<Category | null>(null);
 
   const handleCreate = async () => {
     if (!newCategoryName.trim()) return;
-    await createCategory(newCategoryName.trim());
+    await createCategory(newCategoryName.trim(), parentForNew?.id);
     setNewCategoryName("");
+    setParentForNew(null);
     setIsCreateOpen(false);
   };
 
@@ -43,6 +45,20 @@ export function CategoryManager() {
     setEditingCategory(category);
     setEditName(category.name);
     setIsEditOpen(true);
+  };
+
+  const openCreateSub = (parent: Category) => {
+    setParentForNew(parent);
+    setNewCategoryName("");
+    setIsCreateOpen(true);
+    // Auto-expand parent
+    setExpandedIds(prev => new Set([...prev, parent.id]));
+  };
+
+  const openCreateRoot = () => {
+    setParentForNew(null);
+    setNewCategoryName("");
+    setIsCreateOpen(true);
   };
 
   const toggleExpand = (id: string) => {
@@ -88,6 +104,15 @@ export function CategoryManager() {
               variant="ghost"
               size="icon"
               className="h-7 w-7"
+              onClick={() => openCreateSub(category)}
+              title="添加子分类"
+            >
+              <FolderPlus className="h-3 w-3" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
               onClick={() => openEdit(category)}
             >
               <Pencil className="h-3 w-3" />
@@ -119,23 +144,35 @@ export function CategoryManager() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium">分类管理</h3>
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <Dialog open={isCreateOpen} onOpenChange={(open) => {
+          setIsCreateOpen(open);
+          if (!open) setParentForNew(null);
+        }}>
           <DialogTrigger asChild>
-            <Button size="sm">
+            <Button size="sm" onClick={openCreateRoot}>
               <Plus className="h-4 w-4 mr-1" />
               新建分类
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>新建分类</DialogTitle>
+              <DialogTitle>
+                {parentForNew ? `在「${parentForNew.name}」下新建子分类` : "新建分类"}
+              </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
+              {parentForNew && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted p-2 rounded">
+                  <Folder className="h-4 w-4" />
+                  <span>父分类: {parentForNew.name}</span>
+                </div>
+              )}
               <Input
                 placeholder="分类名称"
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+                autoFocus
               />
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
