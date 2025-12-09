@@ -433,6 +433,7 @@ function DraggableFolderCard({
   viewMode = "grid",
   selectionMode = false,
   isSelected = false,
+  isPendingSelection = false,
   onSelect,
 }: {
   category: Category;
@@ -446,6 +447,7 @@ function DraggableFolderCard({
   viewMode?: "grid" | "list";
   selectionMode?: boolean;
   isSelected?: boolean;
+  isPendingSelection?: boolean;
   onSelect?: (id: string, selected: boolean) => void;
 }) {
   const { setNodeRef: setDropRef, isOver } = useDroppable({
@@ -569,7 +571,8 @@ function DraggableFolderCard({
               "cursor-pointer transition-all hover:shadow-md group",
               isOver && "ring-2 ring-primary bg-primary/10 shadow-lg",
               isDragging && "opacity-50",
-              isSelected && "ring-2 ring-primary bg-primary/5"
+              isSelected && "ring-2 ring-primary bg-primary/5",
+              isPendingSelection && !isSelected && "ring-2 ring-primary/50 bg-primary/10"
             )}
             onDoubleClick={onClick}
             onClick={() => {
@@ -658,7 +661,8 @@ function DraggableFolderCard({
             "cursor-pointer transition-all hover:shadow-md group",
             isOver && "ring-2 ring-primary bg-primary/10 shadow-lg",
             isDragging && "opacity-50",
-            isSelected && "ring-2 ring-primary bg-primary/5"
+            isSelected && "ring-2 ring-primary bg-primary/5",
+            isPendingSelection && !isSelected && "ring-2 ring-primary/50 bg-primary/10"
           )}
           onDoubleClick={onClick}
           onClick={() => {
@@ -802,7 +806,7 @@ export function FileExplorer({
   // Lasso selection
   const contentAreaRef = useRef<HTMLDivElement>(null);
   
-  const handleLassoSelectionChange = useCallback((selectedIds: Set<string>) => {
+  const handleLassoSelectionComplete = useCallback((selectedIds: Set<string>) => {
     // Separate folder and material selections
     const folderIds = new Set<string>();
     const materialIds = new Set<string>();
@@ -825,9 +829,10 @@ export function FileExplorer({
   const {
     isLassoActive,
     lassoRect,
+    pendingSelectedIds,
   } = useLassoSelection({
     containerRef: contentAreaRef,
-    onSelectionChange: handleLassoSelectionChange,
+    onSelectionComplete: handleLassoSelectionComplete,
     itemSelector: '[data-selectable-item]',
     getItemId: (element) => element.getAttribute('data-item-id'),
     enabled: true,
@@ -1618,6 +1623,7 @@ export function FileExplorer({
                         viewMode={folderViewMode}
                         selectionMode={selectionMode}
                         isSelected={selectedFolders.has(cat.id)}
+                        isPendingSelection={pendingSelectedIds.has(`folder-${cat.id}`)}
                         onSelect={handleSelectFolder}
                       />
                     ))}
@@ -1732,6 +1738,7 @@ export function FileExplorer({
                           onCopyTo={handleCopyMaterial}
                           selectionMode={selectionMode}
                           isSelected={selectedMaterials.has(material.id)}
+                          isPendingSelection={pendingSelectedIds.has(`material-${material.id}`)}
                           onSelect={handleSelectMaterial}
                         />
                       ))}

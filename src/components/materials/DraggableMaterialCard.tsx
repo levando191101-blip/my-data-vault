@@ -63,6 +63,7 @@ interface DraggableMaterialCardProps {
   onCopyTo?: (materialId: string, categoryId: string | null) => void;
   isDragging?: boolean;
   isSelected?: boolean;
+  isPendingSelection?: boolean;
   onSelect?: (id: string, selected: boolean) => void;
   selectionMode?: boolean;
 }
@@ -117,6 +118,7 @@ export function DraggableMaterialCard({
   onMoveTo,
   onCopyTo,
   isSelected = false,
+  isPendingSelection = false,
   onSelect,
   selectionMode = false,
 }: DraggableMaterialCardProps) {
@@ -299,7 +301,8 @@ export function DraggableMaterialCard({
             className={cn(
               "group hover:shadow-md transition-shadow",
               isDragging && "shadow-lg ring-2 ring-primary",
-              isSelected && "ring-2 ring-primary bg-primary/5"
+              isSelected && "ring-2 ring-primary bg-primary/5",
+              isPendingSelection && !isSelected && "ring-2 ring-primary/50 bg-primary/10"
             )}
             data-selectable-item
             data-item-id={`material-${material.id}`}
