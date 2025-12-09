@@ -1,0 +1,325 @@
+import { useState } from "react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  FileText,
+  Image,
+  Video,
+  File,
+  MoreVertical,
+  Download,
+  Trash2,
+  ExternalLink,
+  Eye,
+  GripVertical,
+  Check,
+  X,
+  Pencil,
+} from "lucide-react";
+import { Material } from "@/hooks/useMaterials";
+import { supabase } from "@/integrations/supabase/client";
+import { Category } from "@/hooks/useCategories";
+
+interface DraggableMaterialCardProps {
+  material: Material;
+  categories: Category[];
+  onDelete: (id: string, filePath: string) => void;
+  onSave: (id: string, data: { title: string; categoryId: string | null; tagIds: string[] }) => Promise<boolean>;
+  onPreview?: (material: Material) => void;
+  isDragging?: boolean;
+}
+
+const getFileIcon = (fileType: string) => {
+  switch (fileType) {
+    case "pdf":
+    case "document":
+      return <FileText className="h-8 w-8" />;
+    case "image":
+      return <Image className="h-8 w-8" />;
+    case "video":
+      return <Video className="h-8 w-8" />;
+    default:
+      return <File className="h-8 w-8" />;
+  }
+};
+
+const formatFileSize = (bytes: number) => {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+};
+
+// Build tree and flatten categories for select
+const buildCategoryTree = (categories: Category[]): { id: string; name: string; level: number }[] => {
+  const result: { id: string; name: string; level: number }[] = [];
+  const categoryMap = new Map(categories.map(c => [c.id, c]));
+  
+  const addWithChildren = (cat: Category, level: number) => {
+    result.push({ id: cat.id, name: cat.name, level });
+    const children = categories.filter(c => c.parent_id === cat.id);
+    children.forEach(child => addWithChildren(child, level + 1));
+  };
+  
+  // Start with root categories (no parent)
+  categories
+    .filter(c => !c.parent_id)
+    .forEach(cat => addWithChildren(cat, 0));
+    
+  return result;
+};
+
+export function DraggableMaterialCard({
+  material,
+  categories,
+  onDelete,
+  onSave,
+  onPreview,
+}: DraggableMaterialCardProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(material.title);
+  const [editCategoryId, setEditCategoryId] = useState<string | null>(material.category_id);
+  const [saving, setSaving] = useState(false);
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: material.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const handleDownload = async () => {
+    const { data } = supabase.storage
+      .from("materials")
+      .getPublicUrl(material.file_path);
+
+    if (data?.publicUrl) {
+      window.open(data.publicUrl, "_blank");
+    }
+  };
+
+  const handleOpen = async () => {
+    const { data } = supabase.storage
+      .from("materials")
+      .getPublicUrl(material.file_path);
+
+    if (data?.publicUrl) {
+      window.open(data.publicUrl, "_blank");
+    }
+  };
+
+  const handleStartEdit = () => {
+    setEditTitle(material.title);
+    setEditCategoryId(material.category_id);
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setEditTitle(material.title);
+    setEditCategoryId(material.category_id);
+    setIsEditing(false);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editTitle.trim()) return;
+    setSaving(true);
+    const success = await onSave(material.id, {
+      title: editTitle.trim(),
+      categoryId: editCategoryId,
+      tagIds: material.tags?.map(t => t.id) || [],
+    });
+    setSaving(false);
+    if (success) {
+      setIsEditing(false);
+    }
+  };
+
+  const flatCats = buildCategoryTree(categories);
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <Card className={`group hover:shadow-md transition-shadow ${isDragging ? 'shadow-lg ring-2 ring-primary' : ''}`}>
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            {/* Drag handle */}
+            <button
+              {...attributes}
+              {...listeners}
+              className="mt-2 cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors"
+              title="拖拽排序"
+            >
+              <GripVertical className="h-5 w-5 text-muted-foreground" />
+            </button>
+
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+              {getFileIcon(material.file_type)}
+            </div>
+
+            <div className="flex-1 min-w-0">
+              {isEditing ? (
+                <div className="space-y-3">
+                  <Input
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    placeholder="资料标题"
+                    className="h-8"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSaveEdit();
+                      if (e.key === "Escape") handleCancelEdit();
+                    }}
+                  />
+                  <Select
+                    value={editCategoryId || "none"}
+                    onValueChange={(v) => setEditCategoryId(v === "none" ? null : v)}
+                  >
+                    <SelectTrigger className="h-8">
+                      <SelectValue placeholder="选择分类" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">无分类</SelectItem>
+                      {flatCats.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {"　".repeat(cat.level)}{cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={handleCancelEdit}
+                      disabled={saving}
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      取消
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleSaveEdit}
+                      disabled={saving || !editTitle.trim()}
+                    >
+                      <Check className="h-4 w-4 mr-1" />
+                      保存
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <h3
+                        className="font-medium truncate cursor-pointer hover:text-primary transition-colors"
+                        onClick={handleStartEdit}
+                        title="点击编辑"
+                      >
+                        {material.title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {material.file_name}
+                      </p>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {onPreview &&
+                          (material.file_type === "image" ||
+                            material.file_type === "pdf" ||
+                            material.mime_type === "application/pdf") && (
+                            <DropdownMenuItem onClick={() => onPreview(material)}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              预览
+                            </DropdownMenuItem>
+                          )}
+                        <DropdownMenuItem onClick={handleOpen}>
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          打开
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleDownload}>
+                          <Download className="mr-2 h-4 w-4" />
+                          下载
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleStartEdit}>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          编辑
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => onDelete(material.id, material.file_path)}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          删除
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      {formatFileSize(material.file_size)}
+                    </span>
+                    <span className="text-xs text-muted-foreground">•</span>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(material.created_at).toLocaleDateString("zh-CN")}
+                    </span>
+                  </div>
+                  {material.tags && material.tags.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {material.tags.map((tag) => (
+                        <Badge
+                          key={tag.id}
+                          variant="secondary"
+                          className="text-xs"
+                          style={{
+                            backgroundColor: tag.color + "20",
+                            color: tag.color,
+                          }}
+                        >
+                          {tag.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

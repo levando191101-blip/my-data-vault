@@ -14,6 +14,7 @@ export interface Material {
   file_size: number;
   mime_type: string | null;
   category_id: string | null;
+  sort_order: number;
   created_at: string;
   updated_at: string;
   tags?: { id: string; name: string; color: string }[];
@@ -34,6 +35,7 @@ export function useMaterials() {
     const { data: materialsData, error: materialsError } = await supabase
       .from("materials")
       .select("*")
+      .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false });
 
     if (materialsError) {

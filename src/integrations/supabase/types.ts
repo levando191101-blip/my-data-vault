@@ -96,6 +96,7 @@ export type Database = {
           file_type: string
           id: string
           mime_type: string | null
+          sort_order: number | null
           title: string
           updated_at: string
           user_id: string
@@ -110,6 +111,7 @@ export type Database = {
           file_type: string
           id?: string
           mime_type?: string | null
+          sort_order?: number | null
           title: string
           updated_at?: string
           user_id: string
@@ -124,6 +126,7 @@ export type Database = {
           file_type?: string
           id?: string
           mime_type?: string | null
+          sort_order?: number | null
           title?: string
           updated_at?: string
           user_id?: string

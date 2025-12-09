@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { FolderOpen, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,10 +6,9 @@ import { Link } from "react-router-dom";
 import { useMaterials, Material } from "@/hooks/useMaterials";
 import { useCategories } from "@/hooks/useCategories";
 import { useTags } from "@/hooks/useTags";
-import { MaterialCard } from "@/components/materials/MaterialCard";
 import { MaterialFilters } from "@/components/materials/MaterialFilters";
-import { MaterialEditDialog } from "@/components/materials/MaterialEditDialog";
 import { MaterialPreviewDialog } from "@/components/materials/MaterialPreviewDialog";
+import { SortableMaterialsGrid } from "@/components/materials/SortableMaterialsGrid";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,13 +27,18 @@ export default function Materials() {
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
   const [previewMaterial, setPreviewMaterial] = useState<Material | null>(null);
+  const [localMaterials, setLocalMaterials] = useState<Material[]>([]);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     id: string;
     filePath: string;
   }>({ open: false, id: "", filePath: "" });
+
+  // Sync local materials with fetched materials
+  useEffect(() => {
+    setLocalMaterials(materials);
+  }, [materials]);
 
   const handleTagToggle = (tagId: string) => {
     setSelectedTags((prev) =>
@@ -58,8 +62,8 @@ export default function Materials() {
     setDeleteDialog({ open: false, id: "", filePath: "" });
   };
 
-  // Filter materials
-  const filteredMaterials = materials.filter((material) => {
+  // Filter materials from local state for drag support
+  const filteredMaterials = localMaterials.filter((material) => {
     // Category filter
     if (selectedCategory && material.category_id !== selectedCategory) {
       return false;
@@ -75,6 +79,10 @@ export default function Materials() {
 
     return true;
   });
+
+  const handleReorder = (reorderedMaterials: Material[]) => {
+    setLocalMaterials(reorderedMaterials);
+  };
 
   if (loading) {
     return (
@@ -136,25 +144,15 @@ export default function Materials() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredMaterials.map((material) => (
-            <MaterialCard
-              key={material.id}
-              material={material}
-              onDelete={handleDeleteClick}
-              onEdit={setEditingMaterial}
-              onPreview={setPreviewMaterial}
-            />
-          ))}
-        </div>
+        <SortableMaterialsGrid
+          materials={filteredMaterials}
+          categories={categories}
+          onDelete={handleDeleteClick}
+          onSave={updateMaterial}
+          onPreview={setPreviewMaterial}
+          onReorder={handleReorder}
+        />
       )}
-
-      <MaterialEditDialog
-        material={editingMaterial}
-        open={!!editingMaterial}
-        onOpenChange={(open) => !open && setEditingMaterial(null)}
-        onSave={updateMaterial}
-      />
 
       <MaterialPreviewDialog
         material={previewMaterial}
