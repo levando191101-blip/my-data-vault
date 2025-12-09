@@ -12,6 +12,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+  ContextMenuSub,
+  ContextMenuSubTrigger,
+  ContextMenuSubContent,
+} from "@/components/ui/context-menu";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -33,6 +43,9 @@ import {
   Check,
   X,
   Pencil,
+  Folder,
+  FolderOpen,
+  FolderSymlink,
 } from "lucide-react";
 import { Material } from "@/hooks/useMaterials";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,6 +58,7 @@ interface DraggableMaterialCardProps {
   onDelete: (id: string, filePath: string) => void;
   onSave: (id: string, data: { title: string; categoryId: string | null; tagIds: string[] }) => Promise<boolean>;
   onPreview?: (material: Material) => void;
+  onMoveTo?: (materialId: string, categoryId: string | null) => void;
   isDragging?: boolean;
   isSelected?: boolean;
   onSelect?: (id: string, selected: boolean) => void;
@@ -98,6 +112,7 @@ export function DraggableMaterialCard({
   onDelete,
   onSave,
   onPreview,
+  onMoveTo,
   isSelected = false,
   onSelect,
   selectionMode = false,
@@ -169,186 +184,262 @@ export function DraggableMaterialCard({
   };
 
   const flatCats = buildCategoryTree(categories);
+  const canPreview = onPreview && (
+    material.file_type === "image" ||
+    material.file_type === "pdf" ||
+    material.mime_type === "application/pdf"
+  );
+
+  // Context menu content
+  const contextMenuContent = (
+    <ContextMenuContent className="bg-popover w-52">
+      {canPreview && (
+        <>
+          <ContextMenuItem onClick={() => onPreview(material)}>
+            <Eye className="mr-2 h-4 w-4" />
+            预览
+          </ContextMenuItem>
+          <ContextMenuSeparator />
+        </>
+      )}
+      <ContextMenuItem onClick={handleOpen}>
+        <ExternalLink className="mr-2 h-4 w-4" />
+        打开
+      </ContextMenuItem>
+      <ContextMenuItem onClick={handleDownload}>
+        <Download className="mr-2 h-4 w-4" />
+        下载
+      </ContextMenuItem>
+      <ContextMenuSeparator />
+      <ContextMenuItem onClick={handleStartEdit}>
+        <Pencil className="mr-2 h-4 w-4" />
+        编辑
+      </ContextMenuItem>
+      {onMoveTo && (
+        <ContextMenuSub>
+          <ContextMenuSubTrigger>
+            <FolderSymlink className="mr-2 h-4 w-4" />
+            移动到...
+          </ContextMenuSubTrigger>
+          <ContextMenuSubContent className="bg-popover w-48 max-h-64 overflow-y-auto">
+            <ContextMenuItem 
+              onClick={() => onMoveTo(material.id, null)}
+              disabled={material.category_id === null}
+            >
+              <FolderOpen className="mr-2 h-4 w-4" />
+              根目录
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            {flatCats.map(cat => (
+              <ContextMenuItem 
+                key={cat.id}
+                onClick={() => onMoveTo(material.id, cat.id)}
+                disabled={material.category_id === cat.id}
+              >
+                <Folder className="mr-2 h-4 w-4" />
+                <span className="truncate">{"　".repeat(cat.level)}{cat.name}</span>
+              </ContextMenuItem>
+            ))}
+            {flatCats.length === 0 && (
+              <ContextMenuItem disabled>
+                <span className="text-muted-foreground text-xs">没有可用的目标文件夹</span>
+              </ContextMenuItem>
+            )}
+          </ContextMenuSubContent>
+        </ContextMenuSub>
+      )}
+      <ContextMenuSeparator />
+      <ContextMenuItem 
+        onClick={() => onDelete(material.id, material.file_path)}
+        className="text-destructive"
+      >
+        <Trash2 className="mr-2 h-4 w-4" />
+        删除
+      </ContextMenuItem>
+    </ContextMenuContent>
+  );
 
   return (
     <div ref={setNodeRef} style={style}>
-      <Card 
-        className={cn(
-          "group hover:shadow-md transition-shadow",
-          isDragging && "shadow-lg ring-2 ring-primary",
-          isSelected && "ring-2 ring-primary bg-primary/5"
-        )}
-        onClick={() => {
-          if (selectionMode && onSelect) {
-            onSelect(material.id, !isSelected);
-          }
-        }}
-      >
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            {/* Selection checkbox or Drag handle */}
-            {selectionMode ? (
-              <div className="mt-2 p-1">
-                <Checkbox 
-                  checked={isSelected}
-                  onCheckedChange={(checked) => onSelect?.(material.id, !!checked)}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </div>
-            ) : (
-              <button
-                {...attributes}
-                {...listeners}
-                className="mt-2 cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors"
-                title="拖拽排序"
-              >
-                <GripVertical className="h-5 w-5 text-muted-foreground" />
-              </button>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <Card 
+            className={cn(
+              "group hover:shadow-md transition-shadow",
+              isDragging && "shadow-lg ring-2 ring-primary",
+              isSelected && "ring-2 ring-primary bg-primary/5"
             )}
-
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-              {getFileIcon(material.file_type)}
-            </div>
-
-            <div className="flex-1 min-w-0">
-              {isEditing ? (
-                <div className="space-y-3">
-                  <Input
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    placeholder="资料标题"
-                    className="h-8"
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleSaveEdit();
-                      if (e.key === "Escape") handleCancelEdit();
-                    }}
-                  />
-                  <Select
-                    value={editCategoryId || "none"}
-                    onValueChange={(v) => setEditCategoryId(v === "none" ? null : v)}
+            onClick={() => {
+              if (selectionMode && onSelect) {
+                onSelect(material.id, !isSelected);
+              }
+            }}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                {/* Selection checkbox or Drag handle */}
+                {selectionMode ? (
+                  <div className="mt-2 p-1">
+                    <Checkbox 
+                      checked={isSelected}
+                      onCheckedChange={(checked) => onSelect?.(material.id, !!checked)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                ) : (
+                  <button
+                    {...attributes}
+                    {...listeners}
+                    className="mt-2 cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors"
+                    title="拖拽排序"
                   >
-                    <SelectTrigger className="h-8">
-                      <SelectValue placeholder="选择分类" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">无分类</SelectItem>
-                      {flatCats.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.id}>
-                          {"　".repeat(cat.level)}{cat.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={handleCancelEdit}
-                      disabled={saving}
-                    >
-                      <X className="h-4 w-4 mr-1" />
-                      取消
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={handleSaveEdit}
-                      disabled={saving || !editTitle.trim()}
-                    >
-                      <Check className="h-4 w-4 mr-1" />
-                      保存
-                    </Button>
-                  </div>
+                    <GripVertical className="h-5 w-5 text-muted-foreground" />
+                  </button>
+                )}
+
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                  {getFileIcon(material.file_type)}
                 </div>
-              ) : (
-                <>
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <h3
-                        className="font-medium truncate cursor-pointer hover:text-primary transition-colors"
-                        onClick={handleStartEdit}
-                        title="点击编辑"
+
+                <div className="flex-1 min-w-0">
+                  {isEditing ? (
+                    <div className="space-y-3">
+                      <Input
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        placeholder="资料标题"
+                        className="h-8"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleSaveEdit();
+                          if (e.key === "Escape") handleCancelEdit();
+                        }}
+                      />
+                      <Select
+                        value={editCategoryId || "none"}
+                        onValueChange={(v) => setEditCategoryId(v === "none" ? null : v)}
                       >
-                        {material.title}
-                      </h3>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {material.file_name}
-                      </p>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
+                        <SelectTrigger className="h-8">
+                          <SelectValue placeholder="选择分类" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">无分类</SelectItem>
+                          {flatCats.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.id}>
+                              {"　".repeat(cat.level)}{cat.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <div className="flex gap-2">
                         <Button
+                          size="sm"
                           variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={handleCancelEdit}
+                          disabled={saving}
                         >
-                          <MoreVertical className="h-4 w-4" />
+                          <X className="h-4 w-4 mr-1" />
+                          取消
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {onPreview &&
-                          (material.file_type === "image" ||
-                            material.file_type === "pdf" ||
-                            material.mime_type === "application/pdf") && (
-                            <DropdownMenuItem onClick={() => onPreview(material)}>
-                              <Eye className="mr-2 h-4 w-4" />
-                              预览
-                            </DropdownMenuItem>
-                          )}
-                        <DropdownMenuItem onClick={handleOpen}>
-                          <ExternalLink className="mr-2 h-4 w-4" />
-                          打开
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleDownload}>
-                          <Download className="mr-2 h-4 w-4" />
-                          下载
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleStartEdit}>
-                          <Pencil className="mr-2 h-4 w-4" />
-                          编辑
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => onDelete(material.id, material.file_path)}
-                          className="text-destructive"
+                        <Button
+                          size="sm"
+                          onClick={handleSaveEdit}
+                          disabled={saving || !editTitle.trim()}
                         >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          删除
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <span className="text-xs text-muted-foreground">
-                      {formatFileSize(material.file_size)}
-                    </span>
-                    <span className="text-xs text-muted-foreground">•</span>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(material.created_at).toLocaleDateString("zh-CN")}
-                    </span>
-                  </div>
-                  {material.tags && material.tags.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {material.tags.map((tag) => (
-                        <Badge
-                          key={tag.id}
-                          variant="secondary"
-                          className="text-xs"
-                          style={{
-                            backgroundColor: tag.color + "20",
-                            color: tag.color,
-                          }}
-                        >
-                          {tag.name}
-                        </Badge>
-                      ))}
+                          <Check className="h-4 w-4 mr-1" />
+                          保存
+                        </Button>
+                      </div>
                     </div>
+                  ) : (
+                    <>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <h3
+                            className="font-medium truncate cursor-pointer hover:text-primary transition-colors"
+                            onClick={handleStartEdit}
+                            title="点击编辑"
+                          >
+                            {material.title}
+                          </h3>
+                          <p className="text-sm text-muted-foreground truncate">
+                            {material.file_name}
+                          </p>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {canPreview && (
+                              <DropdownMenuItem onClick={() => onPreview(material)}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                预览
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem onClick={handleOpen}>
+                              <ExternalLink className="mr-2 h-4 w-4" />
+                              打开
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={handleDownload}>
+                              <Download className="mr-2 h-4 w-4" />
+                              下载
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={handleStartEdit}>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              编辑
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => onDelete(material.id, material.file_path)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              删除
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <span className="text-xs text-muted-foreground">
+                          {formatFileSize(material.file_size)}
+                        </span>
+                        <span className="text-xs text-muted-foreground">•</span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(material.created_at).toLocaleDateString("zh-CN")}
+                        </span>
+                      </div>
+                      {material.tags && material.tags.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {material.tags.map((tag) => (
+                            <Badge
+                              key={tag.id}
+                              variant="secondary"
+                              className="text-xs"
+                              style={{
+                                backgroundColor: tag.color + "20",
+                                color: tag.color,
+                              }}
+                            >
+                              {tag.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </>
                   )}
-                </>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </ContextMenuTrigger>
+        {contextMenuContent}
+      </ContextMenu>
     </div>
   );
 }
