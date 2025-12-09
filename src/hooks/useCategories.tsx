@@ -21,7 +21,10 @@ export function useCategories() {
   const fetchCategories = async () => {
     if (!user) return;
     
-    setLoading(true);
+    // Only show loading on initial fetch (when no data exists)
+    if (categories.length === 0) {
+      setLoading(true);
+    }
     const { data, error } = await supabase
       .from("categories" as any)
       .select("*")
@@ -108,7 +111,7 @@ export function useCategories() {
 
   useEffect(() => {
     fetchCategories();
-  }, [user]);
+  }, [user?.id]);
 
   return {
     categories,
