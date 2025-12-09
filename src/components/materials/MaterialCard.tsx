@@ -49,14 +49,16 @@ export function MaterialCard({ material, onDelete, onEdit, onPreview }: Material
       .getPublicUrl(material.file_path);
 
     if (data?.publicUrl) {
-      const link = document.createElement("a");
-      link.href = data.publicUrl;
-      link.download = material.file_name;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      setTimeout(() => {
+        const link = document.createElement("a");
+        link.href = data.publicUrl;
+        link.download = material.file_name;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }, 0);
     }
   };
 
@@ -68,13 +70,15 @@ export function MaterialCard({ material, onDelete, onEdit, onPreview }: Material
       .getPublicUrl(material.file_path);
 
     if (data?.publicUrl) {
-      const link = document.createElement("a");
-      link.href = data.publicUrl;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      setTimeout(() => {
+        const link = document.createElement("a");
+        link.href = data.publicUrl;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }, 0);
     }
   };
 

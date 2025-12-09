@@ -1248,14 +1248,19 @@ export function FileExplorer({
     for (const material of materialsToDownload) {
       const { data } = supabase.storage.from("materials").getPublicUrl(material.file_path);
       if (data?.publicUrl) {
-        const link = document.createElement("a");
-        link.href = data.publicUrl;
-        link.download = material.file_name;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        await new Promise<void>(resolve => {
+          setTimeout(() => {
+            const link = document.createElement("a");
+            link.href = data.publicUrl;
+            link.download = material.file_name;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            resolve();
+          }, 100);
+        });
       }
     }
   };
