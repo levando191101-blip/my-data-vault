@@ -254,12 +254,16 @@ function DraggableFolderCard({
   onEdit,
   onDelete,
   onAddSub,
+  viewMode = "grid",
+  iconScale = 1,
 }: {
   category: Category;
   onClick: () => void;
   onEdit: (cat: Category) => void;
   onDelete: (cat: Category) => void;
   onAddSub: (cat: Category) => void;
+  viewMode?: "grid" | "list";
+  iconScale?: number;
 }) {
   const { setNodeRef: setDropRef, isOver } = useDroppable({
     id: `card-folder-${category.id}`,
@@ -270,6 +274,77 @@ function DraggableFolderCard({
     id: `drag-card-folder-${category.id}`,
     data: { type: "folder", id: category.id, data: category },
   });
+
+  // List mode: horizontal compact card
+  if (viewMode === "list") {
+    return (
+      <Card
+        ref={(el) => {
+          setDropRef(el);
+          setDragRef(el);
+        }}
+        className={cn(
+          "cursor-pointer transition-all hover:shadow-md group w-fit",
+          isOver && "ring-2 ring-primary bg-primary/10 shadow-lg",
+          isDragging && "opacity-50"
+        )}
+        onDoubleClick={onClick}
+      >
+        <CardContent className="p-2 flex items-center gap-2">
+          <button
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing p-0.5 rounded hover:bg-muted transition-colors opacity-0 group-hover:opacity-100"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GripVertical className="h-3 w-3 text-muted-foreground" />
+          </button>
+          <div 
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 cursor-pointer"
+            onClick={onClick}
+          >
+            <Folder className="h-4 w-4 text-primary" />
+          </div>
+          <span 
+            className="text-sm font-medium cursor-pointer whitespace-nowrap" 
+            onClick={onClick}
+          >
+            {category.name}
+          </span>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreHorizontal className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-popover">
+              <DropdownMenuItem onClick={() => onEdit(category)}>
+                <Pencil className="mr-2 h-4 w-4" />
+                重命名
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onAddSub(category)}>
+                <FolderPlus className="mr-2 h-4 w-4" />
+                新建子文件夹
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onDelete(category)} className="text-destructive">
+                <Trash2 className="mr-2 h-4 w-4" />
+                删除
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Grid mode: vertical card with scalable icon
+  const iconSize = Math.round(24 * iconScale);
+  const containerSize = Math.round(48 * iconScale);
 
   return (
     <Card
@@ -322,10 +397,11 @@ function DraggableFolderCard({
           </DropdownMenu>
         </div>
         <div 
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 cursor-pointer"
+          className="flex shrink-0 items-center justify-center rounded-lg bg-primary/10 cursor-pointer transition-all"
+          style={{ width: containerSize, height: containerSize }}
           onClick={onClick}
         >
-          <Folder className="h-6 w-6 text-primary" />
+          <Folder className="text-primary" style={{ width: iconSize, height: iconSize }} />
         </div>
         <p 
           className="text-sm font-medium text-center w-full px-1 cursor-pointer line-clamp-2" 
@@ -388,6 +464,25 @@ export function FileExplorer({
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [activeItem, setActiveItem] = useState<DragItem | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [iconScale, setIconScale] = useState(1); // 0.5 to 2
+
+  // Handle wheel zoom for grid mode
+  const handleWheel = (e: React.WheelEvent) => {
+    if (viewMode === "grid" && e.ctrlKey) {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      setIconScale((prev) => Math.min(2, Math.max(0.5, prev + delta)));
+    }
+  };
+
+  // Calculate grid columns based on scale
+  const getGridCols = () => {
+    if (iconScale <= 0.6) return "grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12";
+    if (iconScale <= 0.8) return "grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10";
+    if (iconScale <= 1.2) return "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6";
+    if (iconScale <= 1.5) return "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5";
+    return "grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4";
+  };
 
   // Dialog states
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -708,16 +803,24 @@ export function FileExplorer({
           </div>
 
           {/* Content area */}
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1" onWheel={handleWheel}>
             <div className="p-4">
               {/* Show child folders */}
               {childCategories.length > 0 && (
                 <div className="mb-6">
-                  <h4 className="text-sm font-medium text-muted-foreground mb-3">文件夹</h4>
+                  {viewMode === "grid" && (
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-medium text-muted-foreground">文件夹</h4>
+                      <span className="text-xs text-muted-foreground">Ctrl+滚轮缩放</span>
+                    </div>
+                  )}
+                  {viewMode === "list" && (
+                    <h4 className="text-sm font-medium text-muted-foreground mb-3">文件夹</h4>
+                  )}
                   <div className={cn(
                     viewMode === "grid" 
-                      ? "grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
-                      : "space-y-2"
+                      ? `grid gap-3 ${getGridCols()}`
+                      : "flex flex-wrap gap-3"
                   )}>
                     {childCategories.map((cat) => (
                       <DraggableFolderCard
@@ -727,6 +830,8 @@ export function FileExplorer({
                         onEdit={openEditDialog}
                         onDelete={handleDeleteCategory}
                         onAddSub={openCreateDialog}
+                        viewMode={viewMode}
+                        iconScale={iconScale}
                       />
                     ))}
                   </div>
