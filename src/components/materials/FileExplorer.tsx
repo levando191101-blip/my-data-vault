@@ -134,6 +134,38 @@ function getCategoryPath(categoryId: string | null, categories: Category[]): Cat
   return path;
 }
 
+// Root drop zone component - separate component to ensure proper registration
+function RootDropZone({ 
+  isSelected, 
+  onClick 
+}: { 
+  isSelected: boolean; 
+  onClick: () => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: "folder-root-sidebar",
+    data: { type: "folder", categoryId: null },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "flex items-center gap-2 py-3 px-3 mx-2 mt-2 rounded-md cursor-pointer transition-all min-h-[48px] border-2 border-dashed",
+        isSelected ? "bg-accent text-accent-foreground border-accent" : "hover:bg-muted border-muted-foreground/30",
+        isOver && "ring-2 ring-primary bg-primary/20 border-primary scale-[1.02] shadow-lg"
+      )}
+      onClick={onClick}
+    >
+      <FolderOpen className="h-5 w-5 text-primary shrink-0" />
+      <span className="text-sm font-medium">全部文件（根目录）</span>
+      {isOver && (
+        <span className="ml-auto text-xs text-primary font-medium animate-pulse">释放到此处</span>
+      )}
+    </div>
+  );
+}
+
 // Draggable and droppable folder node for sidebar
 function DraggableFolderNode({
   node,
@@ -865,11 +897,7 @@ export function FileExplorer({
     }
   };
 
-  // Sidebar root drop zone - for moving to actual root (null)
-  const { setNodeRef: setSidebarRootRef, isOver: isOverSidebarRoot } = useDroppable({
-    id: "folder-root-sidebar",
-    data: { type: "folder", categoryId: null, isRootZone: true },
-  });
+  // Note: Sidebar root drop zone is now a separate component (RootDropZone)
 
   // Content area drop zone - for dropping items to CURRENT directory (not root)
   const { setNodeRef: setContentRootRef, isOver: isOverContentArea } = useDroppable({
@@ -961,22 +989,11 @@ export function FileExplorer({
               </Button>
             </div>
             
-            {/* Root folder - OUTSIDE ScrollArea for proper drop detection */}
-            <div
-              ref={setSidebarRootRef}
-              className={cn(
-                "flex items-center gap-2 py-3 px-3 mx-2 mt-2 rounded-md cursor-pointer transition-all min-h-[44px] border-2 border-dashed",
-                currentCategory === null ? "bg-accent text-accent-foreground border-accent" : "hover:bg-muted border-transparent",
-                isOverSidebarRoot && "ring-2 ring-primary bg-primary/10 border-primary scale-[1.02]"
-              )}
+            {/* Root folder drop zone - using dedicated component */}
+            <RootDropZone 
+              isSelected={currentCategory === null}
               onClick={() => setCurrentCategory(null)}
-            >
-              <FolderOpen className="h-5 w-5 text-primary shrink-0" />
-              <span className="text-sm font-medium">全部文件（根目录）</span>
-              {isOverSidebarRoot && (
-                <span className="ml-auto text-xs text-primary">释放</span>
-              )}
-            </div>
+            />
             
             <ScrollArea className="flex-1">
               <div className="p-2 space-y-0.5">
