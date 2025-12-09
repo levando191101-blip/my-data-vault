@@ -37,6 +37,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -203,76 +210,100 @@ function DraggableFolderNode({
 
   return (
     <div className={cn("space-y-0.5", isDragging && "opacity-50")}>
-      <div
-        ref={(el) => {
-          setDropRef(el);
-          setDragRef(el);
-        }}
-        className={cn(
-          "flex items-center gap-1 py-1 px-2 rounded-md cursor-pointer transition-colors group",
-          selectedCategory === node.id ? "bg-accent text-accent-foreground" : "hover:bg-muted",
-          isOver && "ring-2 ring-primary bg-primary/10"
-        )}
-        style={{ paddingLeft: level * 12 + 8 }}
-        onClick={() => onCategoryChange(node.id)}
-      >
-        <button
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing p-0.5 rounded hover:bg-muted-foreground/10 opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <GripVertical className="h-3 w-3 text-muted-foreground" />
-        </button>
-        {hasChildren ? (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-5 w-5 p-0"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleExpand(node.id);
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <div
+            ref={(el) => {
+              setDropRef(el);
+              setDragRef(el);
             }}
+            className={cn(
+              "flex items-center gap-1 py-1 px-2 rounded-md cursor-pointer transition-colors group",
+              selectedCategory === node.id ? "bg-accent text-accent-foreground" : "hover:bg-muted",
+              isOver && "ring-2 ring-primary bg-primary/10"
+            )}
+            style={{ paddingLeft: level * 12 + 8 }}
+            onClick={() => onCategoryChange(node.id)}
           >
-            <ChevronRight className={cn("h-3 w-3 transition-transform", isExpanded && "rotate-90")} />
-          </Button>
-        ) : (
-          <span className="w-5" />
-        )}
-        {selectedCategory === node.id ? (
-          <FolderOpen className="h-4 w-4 text-primary shrink-0" />
-        ) : (
-          <Folder className="h-4 w-4 text-muted-foreground shrink-0" />
-        )}
-        <span className="text-sm truncate flex-1">{node.name}</span>
-        
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+            <button
+              {...attributes}
+              {...listeners}
+              className="cursor-grab active:cursor-grabbing p-0.5 rounded hover:bg-muted-foreground/10 opacity-0 group-hover:opacity-100 transition-opacity"
               onClick={(e) => e.stopPropagation()}
             >
-              <MoreHorizontal className="h-3 w-3" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-popover">
-            <DropdownMenuItem onClick={() => onEdit(node)}>
-              <Pencil className="mr-2 h-3 w-3" />
-              重命名
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onAddSub(node)}>
-              <FolderPlus className="mr-2 h-3 w-3" />
-              新建子文件夹
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onDelete(node)} className="text-destructive">
-              <Trash2 className="mr-2 h-3 w-3" />
-              删除
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+              <GripVertical className="h-3 w-3 text-muted-foreground" />
+            </button>
+            {hasChildren ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-5 w-5 p-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleExpand(node.id);
+                }}
+              >
+                <ChevronRight className={cn("h-3 w-3 transition-transform", isExpanded && "rotate-90")} />
+              </Button>
+            ) : (
+              <span className="w-5" />
+            )}
+            {selectedCategory === node.id ? (
+              <FolderOpen className="h-4 w-4 text-primary shrink-0" />
+            ) : (
+              <Folder className="h-4 w-4 text-muted-foreground shrink-0" />
+            )}
+            <span className="text-sm truncate flex-1">{node.name}</span>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreHorizontal className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-popover">
+                <DropdownMenuItem onClick={() => onEdit(node)}>
+                  <Pencil className="mr-2 h-3 w-3" />
+                  重命名
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onAddSub(node)}>
+                  <FolderPlus className="mr-2 h-3 w-3" />
+                  新建子文件夹
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onDelete(node)} className="text-destructive">
+                  <Trash2 className="mr-2 h-3 w-3" />
+                  删除
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </ContextMenuTrigger>
+        <ContextMenuContent className="bg-popover w-48">
+          <ContextMenuItem onClick={() => onCategoryChange(node.id)}>
+            <FolderOpen className="mr-2 h-4 w-4" />
+            打开文件夹
+          </ContextMenuItem>
+          <ContextMenuSeparator />
+          <ContextMenuItem onClick={() => onEdit(node)}>
+            <Pencil className="mr-2 h-4 w-4" />
+            重命名
+          </ContextMenuItem>
+          <ContextMenuItem onClick={() => onAddSub(node)}>
+            <FolderPlus className="mr-2 h-4 w-4" />
+            新建子文件夹
+          </ContextMenuItem>
+          <ContextMenuSeparator />
+          <ContextMenuItem onClick={() => onDelete(node)} className="text-destructive">
+            <Trash2 className="mr-2 h-4 w-4" />
+            删除文件夹
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
       {hasChildren && isExpanded && (
         <div>
           {node.children.map((child) => (
@@ -327,169 +358,203 @@ function DraggableFolderCard({
     data: { type: "folder", id: category.id, data: category },
   });
 
+  // Context menu content (shared between list and grid modes)
+  const contextMenuContent = (
+    <ContextMenuContent className="bg-popover w-48">
+      <ContextMenuItem onClick={onClick}>
+        <FolderOpen className="mr-2 h-4 w-4" />
+        打开文件夹
+      </ContextMenuItem>
+      <ContextMenuSeparator />
+      <ContextMenuItem onClick={() => onEdit(category)}>
+        <Pencil className="mr-2 h-4 w-4" />
+        重命名
+      </ContextMenuItem>
+      <ContextMenuItem onClick={() => onAddSub(category)}>
+        <FolderPlus className="mr-2 h-4 w-4" />
+        新建子文件夹
+      </ContextMenuItem>
+      <ContextMenuSeparator />
+      <ContextMenuItem onClick={() => onDelete(category)} className="text-destructive">
+        <Trash2 className="mr-2 h-4 w-4" />
+        删除文件夹
+      </ContextMenuItem>
+    </ContextMenuContent>
+  );
+
   // List mode: full-width horizontal card
   if (viewMode === "list") {
     return (
-      <Card
-        ref={(el) => {
-          setDropRef(el);
-          setDragRef(el);
-        }}
-        className={cn(
-          "cursor-pointer transition-all hover:shadow-md group",
-          isOver && "ring-2 ring-primary bg-primary/10 shadow-lg",
-          isDragging && "opacity-50",
-          isSelected && "ring-2 ring-primary bg-primary/5"
-        )}
-        onDoubleClick={onClick}
-        onClick={() => {
-          if (selectionMode && onSelect) {
-            onSelect(category.id, !isSelected);
-          }
-        }}
-      >
-        <CardContent className="p-3 flex items-center gap-3">
-          {selectionMode ? (
-            <div className="p-1">
-              <Checkbox 
-                checked={isSelected}
-                onCheckedChange={(checked) => onSelect?.(category.id, !!checked)}
-                onClick={(e) => e.stopPropagation()}
-              />
-            </div>
-          ) : (
-            <button
-              {...attributes}
-              {...listeners}
-              className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <GripVertical className="h-4 w-4 text-muted-foreground" />
-            </button>
-          )}
-          <div 
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 cursor-pointer"
-            onClick={onClick}
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <Card
+            ref={(el) => {
+              setDropRef(el);
+              setDragRef(el);
+            }}
+            className={cn(
+              "cursor-pointer transition-all hover:shadow-md group",
+              isOver && "ring-2 ring-primary bg-primary/10 shadow-lg",
+              isDragging && "opacity-50",
+              isSelected && "ring-2 ring-primary bg-primary/5"
+            )}
+            onDoubleClick={onClick}
+            onClick={() => {
+              if (selectionMode && onSelect) {
+                onSelect(category.id, !isSelected);
+              }
+            }}
           >
-            <Folder className="h-5 w-5 text-primary" />
-          </div>
-          <span 
-            className="text-sm font-medium cursor-pointer flex-1" 
-            onClick={onClick}
-          >
-            {category.name}
-          </span>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={(e) => e.stopPropagation()}
+            <CardContent className="p-3 flex items-center gap-3">
+              {selectionMode ? (
+                <div className="p-1">
+                  <Checkbox 
+                    checked={isSelected}
+                    onCheckedChange={(checked) => onSelect?.(category.id, !!checked)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+              ) : (
+                <button
+                  {...attributes}
+                  {...listeners}
+                  className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <GripVertical className="h-4 w-4 text-muted-foreground" />
+                </button>
+              )}
+              <div 
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 cursor-pointer"
+                onClick={onClick}
               >
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-popover">
-              <DropdownMenuItem onClick={() => onEdit(category)}>
-                <Pencil className="mr-2 h-4 w-4" />
-                重命名
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onAddSub(category)}>
-                <FolderPlus className="mr-2 h-4 w-4" />
-                新建子文件夹
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onDelete(category)} className="text-destructive">
-                <Trash2 className="mr-2 h-4 w-4" />
-                删除
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </CardContent>
-      </Card>
+                <Folder className="h-5 w-5 text-primary" />
+              </div>
+              <span 
+                className="text-sm font-medium cursor-pointer flex-1" 
+                onClick={onClick}
+              >
+                {category.name}
+              </span>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-popover">
+                  <DropdownMenuItem onClick={() => onEdit(category)}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    重命名
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onAddSub(category)}>
+                    <FolderPlus className="mr-2 h-4 w-4" />
+                    新建子文件夹
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onDelete(category)} className="text-destructive">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    删除
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </CardContent>
+          </Card>
+        </ContextMenuTrigger>
+        {contextMenuContent}
+      </ContextMenu>
     );
   }
 
   // Grid mode: horizontal compact card
   return (
-    <Card
-      ref={(el) => {
-        setDropRef(el);
-        setDragRef(el);
-      }}
-      className={cn(
-        "cursor-pointer transition-all hover:shadow-md group",
-        isOver && "ring-2 ring-primary bg-primary/10 shadow-lg",
-        isDragging && "opacity-50",
-        isSelected && "ring-2 ring-primary bg-primary/5"
-      )}
-      onDoubleClick={onClick}
-      onClick={() => {
-        if (selectionMode && onSelect) {
-          onSelect(category.id, !isSelected);
-        }
-      }}
-    >
-      <CardContent className="p-3 flex items-center gap-3">
-        {selectionMode ? (
-          <div className="p-1">
-            <Checkbox 
-              checked={isSelected}
-              onCheckedChange={(checked) => onSelect?.(category.id, !!checked)}
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-        ) : (
-          <button
-            {...attributes}
-            {...listeners}
-            className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <GripVertical className="h-4 w-4 text-muted-foreground" />
-          </button>
-        )}
-        <div 
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 cursor-pointer"
-          onClick={onClick}
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <Card
+          ref={(el) => {
+            setDropRef(el);
+            setDragRef(el);
+          }}
+          className={cn(
+            "cursor-pointer transition-all hover:shadow-md group",
+            isOver && "ring-2 ring-primary bg-primary/10 shadow-lg",
+            isDragging && "opacity-50",
+            isSelected && "ring-2 ring-primary bg-primary/5"
+          )}
+          onDoubleClick={onClick}
+          onClick={() => {
+            if (selectionMode && onSelect) {
+              onSelect(category.id, !isSelected);
+            }
+          }}
         >
-          <Folder className="h-5 w-5 text-primary" />
-        </div>
-        <span 
-          className="text-sm font-medium cursor-pointer truncate flex-1 min-w-0" 
-          title={category.name}
-          onClick={onClick}
-        >
-          {category.name}
-        </span>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-              onClick={(e) => e.stopPropagation()}
+          <CardContent className="p-3 flex items-center gap-3">
+            {selectionMode ? (
+              <div className="p-1">
+                <Checkbox 
+                  checked={isSelected}
+                  onCheckedChange={(checked) => onSelect?.(category.id, !!checked)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+            ) : (
+              <button
+                {...attributes}
+                {...listeners}
+                className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <GripVertical className="h-4 w-4 text-muted-foreground" />
+              </button>
+            )}
+            <div 
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 cursor-pointer"
+              onClick={onClick}
             >
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-popover">
-            <DropdownMenuItem onClick={() => onEdit(category)}>
-              <Pencil className="mr-2 h-4 w-4" />
-              重命名
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onAddSub(category)}>
-              <FolderPlus className="mr-2 h-4 w-4" />
-              新建子文件夹
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onDelete(category)} className="text-destructive">
-              <Trash2 className="mr-2 h-4 w-4" />
-              删除
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </CardContent>
-    </Card>
+              <Folder className="h-5 w-5 text-primary" />
+            </div>
+            <span 
+              className="text-sm font-medium cursor-pointer truncate flex-1 min-w-0" 
+              title={category.name}
+              onClick={onClick}
+            >
+              {category.name}
+            </span>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-popover">
+                <DropdownMenuItem onClick={() => onEdit(category)}>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  重命名
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onAddSub(category)}>
+                  <FolderPlus className="mr-2 h-4 w-4" />
+                  新建子文件夹
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onDelete(category)} className="text-destructive">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  删除
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </CardContent>
+        </Card>
+      </ContextMenuTrigger>
+      {contextMenuContent}
+    </ContextMenu>
   );
 }
 
