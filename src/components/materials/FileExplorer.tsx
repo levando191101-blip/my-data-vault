@@ -267,6 +267,9 @@ function DraggableFolderCard({
   onDelete,
   onAddSub,
   viewMode = "grid",
+  selectionMode = false,
+  isSelected = false,
+  onSelect,
 }: {
   category: Category;
   onClick: () => void;
@@ -274,6 +277,9 @@ function DraggableFolderCard({
   onDelete: (cat: Category) => void;
   onAddSub: (cat: Category) => void;
   viewMode?: "grid" | "list";
+  selectionMode?: boolean;
+  isSelected?: boolean;
+  onSelect?: (id: string, selected: boolean) => void;
 }) {
   const { setNodeRef: setDropRef, isOver } = useDroppable({
     id: `card-folder-${category.id}`,
@@ -296,19 +302,35 @@ function DraggableFolderCard({
         className={cn(
           "cursor-pointer transition-all hover:shadow-md group",
           isOver && "ring-2 ring-primary bg-primary/10 shadow-lg",
-          isDragging && "opacity-50"
+          isDragging && "opacity-50",
+          isSelected && "ring-2 ring-primary bg-primary/5"
         )}
         onDoubleClick={onClick}
+        onClick={() => {
+          if (selectionMode && onSelect) {
+            onSelect(category.id, !isSelected);
+          }
+        }}
       >
         <CardContent className="p-3 flex items-center gap-3">
-          <button
-            {...attributes}
-            {...listeners}
-            className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <GripVertical className="h-4 w-4 text-muted-foreground" />
-          </button>
+          {selectionMode ? (
+            <div className="p-1">
+              <Checkbox 
+                checked={isSelected}
+                onCheckedChange={(checked) => onSelect?.(category.id, !!checked)}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          ) : (
+            <button
+              {...attributes}
+              {...listeners}
+              className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <GripVertical className="h-4 w-4 text-muted-foreground" />
+            </button>
+          )}
           <div 
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 cursor-pointer"
             onClick={onClick}
@@ -362,19 +384,35 @@ function DraggableFolderCard({
       className={cn(
         "cursor-pointer transition-all hover:shadow-md group",
         isOver && "ring-2 ring-primary bg-primary/10 shadow-lg",
-        isDragging && "opacity-50"
+        isDragging && "opacity-50",
+        isSelected && "ring-2 ring-primary bg-primary/5"
       )}
       onDoubleClick={onClick}
+      onClick={() => {
+        if (selectionMode && onSelect) {
+          onSelect(category.id, !isSelected);
+        }
+      }}
     >
       <CardContent className="p-3 flex items-center gap-3">
-        <button
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <GripVertical className="h-4 w-4 text-muted-foreground" />
-        </button>
+        {selectionMode ? (
+          <div className="p-1">
+            <Checkbox 
+              checked={isSelected}
+              onCheckedChange={(checked) => onSelect?.(category.id, !!checked)}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        ) : (
+          <button
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
+          </button>
+        )}
         <div 
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 cursor-pointer"
           onClick={onClick}
@@ -473,7 +511,9 @@ export function FileExplorer({
   // Batch selection states
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedMaterials, setSelectedMaterials] = useState<Set<string>>(new Set());
+  const [selectedFolders, setSelectedFolders] = useState<Set<string>>(new Set());
   const [batchMoveCategoryId, setBatchMoveCategoryId] = useState<string>("none");
+  const [batchMoveType, setBatchMoveType] = useState<"files" | "folders">("files");
 
   // Dialog states
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -554,6 +594,7 @@ export function FileExplorer({
   const toggleSelectionMode = () => {
     if (selectionMode) {
       setSelectedMaterials(new Set());
+      setSelectedFolders(new Set());
     }
     setSelectionMode(!selectionMode);
   };
@@ -570,7 +611,19 @@ export function FileExplorer({
     });
   };
 
-  const handleSelectAll = () => {
+  const handleSelectFolder = (id: string, selected: boolean) => {
+    setSelectedFolders(prev => {
+      const next = new Set(prev);
+      if (selected) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAllMaterials = () => {
     if (selectedMaterials.size === currentMaterials.length) {
       setSelectedMaterials(new Set());
     } else {
@@ -578,7 +631,15 @@ export function FileExplorer({
     }
   };
 
-  const handleBatchDelete = async () => {
+  const handleSelectAllFolders = () => {
+    if (selectedFolders.size === childCategories.length) {
+      setSelectedFolders(new Set());
+    } else {
+      setSelectedFolders(new Set(childCategories.map(c => c.id)));
+    }
+  };
+
+  const handleBatchDeleteMaterials = async () => {
     if (selectedMaterials.size === 0) return;
     if (!confirm(`确定要删除选中的 ${selectedMaterials.size} 个文件吗？`)) return;
     
@@ -591,28 +652,68 @@ export function FileExplorer({
     toast({ title: `已删除 ${materialsToDelete.length} 个文件` });
   };
 
-  const handleBatchMove = async () => {
-    if (selectedMaterials.size === 0) return;
+  const handleBatchDeleteFolders = async () => {
+    if (selectedFolders.size === 0) return;
+    if (!confirm(`确定要删除选中的 ${selectedFolders.size} 个文件夹吗？`)) return;
     
+    for (const folderId of selectedFolders) {
+      await deleteCategory(folderId);
+    }
+    setSelectedFolders(new Set());
+    setSelectionMode(false);
+    onCategoriesRefresh?.();
+    toast({ title: `已删除 ${selectedFolders.size} 个文件夹` });
+  };
+
+  const handleBatchMove = async () => {
     setIsSaving(true);
     const targetCategoryId = batchMoveCategoryId === "none" ? null : batchMoveCategoryId;
     
-    for (const materialId of selectedMaterials) {
-      const material = materials.find(m => m.id === materialId);
-      if (material) {
-        await onSave(materialId, {
-          title: material.title,
-          categoryId: targetCategoryId,
-          tagIds: material.tags?.map(t => t.id) || [],
-        });
+    if (batchMoveType === "files") {
+      for (const materialId of selectedMaterials) {
+        const material = materials.find(m => m.id === materialId);
+        if (material) {
+          await onSave(materialId, {
+            title: material.title,
+            categoryId: targetCategoryId,
+            tagIds: material.tags?.map(t => t.id) || [],
+          });
+        }
       }
+      toast({ title: `已移动 ${selectedMaterials.size} 个文件` });
+      setSelectedMaterials(new Set());
+    } else {
+      // Move folders - update parent_id
+      for (const folderId of selectedFolders) {
+        const folder = categories.find(c => c.id === folderId);
+        if (folder && folderId !== targetCategoryId) {
+          // Don't allow moving folder into itself or its children
+          const isChild = (parentId: string, childId: string): boolean => {
+            const child = categories.find(c => c.id === childId);
+            if (!child) return false;
+            if (child.parent_id === parentId) return true;
+            if (child.parent_id) return isChild(parentId, child.parent_id);
+            return false;
+          };
+          
+          if (targetCategoryId && isChild(folderId, targetCategoryId)) {
+            continue; // Skip this folder
+          }
+          
+          await supabase
+            .from("categories")
+            .update({ parent_id: targetCategoryId })
+            .eq("id", folderId);
+        }
+      }
+      toast({ title: `已移动 ${selectedFolders.size} 个文件夹` });
+      setSelectedFolders(new Set());
+      onCategoriesRefresh?.();
     }
     
     setIsSaving(false);
-    setSelectedMaterials(new Set());
     setSelectionMode(false);
     setDialogOpen(false);
-    toast({ title: `已移动 ${selectedMaterials.size} 个文件` });
   };
 
   const handleBatchDownload = async () => {
@@ -878,18 +979,71 @@ export function FileExplorer({
               {childCategories.length > 0 && (
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-medium text-muted-foreground">文件夹</h4>
-                    <Tabs value={folderViewMode} onValueChange={(v) => setFolderViewMode(v as "grid" | "list")}>
-                      <TabsList className="h-7">
-                        <TabsTrigger value="grid" className="h-5 px-1.5">
-                          <LayoutGrid className="h-3.5 w-3.5" />
-                        </TabsTrigger>
-                        <TabsTrigger value="list" className="h-5 px-1.5">
-                          <List className="h-3.5 w-3.5" />
-                        </TabsTrigger>
-                      </TabsList>
-                    </Tabs>
+                    <div className="flex items-center gap-2">
+                      {selectionMode && (
+                        <Checkbox
+                          checked={selectedFolders.size === childCategories.length && childCategories.length > 0}
+                          onCheckedChange={handleSelectAllFolders}
+                        />
+                      )}
+                      <h4 className="text-sm font-medium text-muted-foreground">
+                        文件夹 {selectionMode && selectedFolders.size > 0 && `(已选 ${selectedFolders.size})`}
+                      </h4>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant={selectionMode ? "secondary" : "ghost"}
+                        size="sm"
+                        className="h-7"
+                        onClick={toggleSelectionMode}
+                      >
+                        <CheckSquare className="h-3.5 w-3.5 mr-1" />
+                        {selectionMode ? "取消" : "选择"}
+                      </Button>
+                      <Tabs value={folderViewMode} onValueChange={(v) => setFolderViewMode(v as "grid" | "list")}>
+                        <TabsList className="h-7">
+                          <TabsTrigger value="grid" className="h-5 px-1.5">
+                            <LayoutGrid className="h-3.5 w-3.5" />
+                          </TabsTrigger>
+                          <TabsTrigger value="list" className="h-5 px-1.5">
+                            <List className="h-3.5 w-3.5" />
+                          </TabsTrigger>
+                        </TabsList>
+                      </Tabs>
+                    </div>
                   </div>
+
+                  {/* Folder batch action bar */}
+                  {selectionMode && selectedFolders.size > 0 && (
+                    <div className="mb-3 p-2 bg-muted rounded-lg flex items-center gap-2 flex-wrap">
+                      <span className="text-sm text-muted-foreground">
+                        已选择 {selectedFolders.size} 个文件夹
+                      </span>
+                      <div className="flex-1" />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setDialogType("batch-move");
+                          setBatchMoveType("folders");
+                          setBatchMoveCategoryId("none");
+                          setDialogOpen(true);
+                        }}
+                      >
+                        <FolderInput className="h-4 w-4 mr-1" />
+                        移动
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleBatchDeleteFolders}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        删除
+                      </Button>
+                    </div>
+                  )}
+
                   <div className={cn(
                     folderViewMode === "grid" 
                       ? "grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
@@ -904,6 +1058,9 @@ export function FileExplorer({
                         onDelete={handleDeleteCategory}
                         onAddSub={openCreateDialog}
                         viewMode={folderViewMode}
+                        selectionMode={selectionMode}
+                        isSelected={selectedFolders.has(cat.id)}
+                        onSelect={handleSelectFolder}
                       />
                     ))}
                   </div>
@@ -918,7 +1075,7 @@ export function FileExplorer({
                       {selectionMode && (
                         <Checkbox
                           checked={selectedMaterials.size === currentMaterials.length && currentMaterials.length > 0}
-                          onCheckedChange={handleSelectAll}
+                          onCheckedChange={handleSelectAllMaterials}
                         />
                       )}
                       <h4 className="text-sm font-medium text-muted-foreground">
@@ -968,6 +1125,7 @@ export function FileExplorer({
                         size="sm"
                         onClick={() => {
                           setDialogType("batch-move");
+                          setBatchMoveType("files");
                           setBatchMoveCategoryId("none");
                           setDialogOpen(true);
                         }}
@@ -978,7 +1136,7 @@ export function FileExplorer({
                       <Button
                         variant="destructive"
                         size="sm"
-                        onClick={handleBatchDelete}
+                        onClick={handleBatchDeleteMaterials}
                       >
                         <Trash2 className="h-4 w-4 mr-1" />
                         删除
@@ -1053,7 +1211,9 @@ export function FileExplorer({
                   : "新建文件夹"
                 : dialogType === "edit"
                 ? "重命名文件夹"
-                : "移动文件"
+                : batchMoveType === "files"
+                ? "移动文件"
+                : "移动文件夹"
               }
             </DialogTitle>
           </DialogHeader>
@@ -1061,7 +1221,7 @@ export function FileExplorer({
           {dialogType === "batch-move" ? (
             <>
               <p className="text-sm text-muted-foreground">
-                将 {selectedMaterials.size} 个文件移动到：
+                将 {batchMoveType === "files" ? selectedMaterials.size : selectedFolders.size} 个{batchMoveType === "files" ? "文件" : "文件夹"}移动到：
               </p>
               <Select
                 value={batchMoveCategoryId}
@@ -1072,11 +1232,13 @@ export function FileExplorer({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">根目录（无分类）</SelectItem>
-                  {flatCategories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {"　".repeat(cat.level)}{cat.name}
-                    </SelectItem>
-                  ))}
+                  {flatCategories
+                    .filter(cat => batchMoveType === "folders" ? !selectedFolders.has(cat.id) : true)
+                    .map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {"　".repeat(cat.level)}{cat.name}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
               <DialogFooter>
