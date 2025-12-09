@@ -756,7 +756,17 @@ export function FileExplorer({
     const { active, over } = event;
     setActiveItem(null);
 
-    if (!over) return;
+    if (!over) {
+      console.log("No drop target detected");
+      return;
+    }
+
+    console.log("Drop detected:", { 
+      activeId: active.id, 
+      overId: over.id,
+      activeData: active.data.current,
+      overData: over.data.current 
+    });
 
     const activeData = active.data.current as any;
     const overData = over.data.current as any;
@@ -765,12 +775,23 @@ export function FileExplorer({
     if (overData?.type === "folder") {
       const targetCategoryId = overData.categoryId as string | null;
       
+      console.log("Dropping to folder target:", targetCategoryId);
+      
       // If dragging a folder
       if (activeData?.type === "folder") {
         const folderId = activeData.id as string;
+        const folder = categories.find(c => c.id === folderId);
         
-        // Don't drop folder into itself or its children
+        console.log("Moving folder:", { folderId, currentParent: folder?.parent_id, targetCategoryId });
+        
+        // Don't drop folder into itself
         if (folderId === targetCategoryId) return;
+        
+        // Skip if already in target location
+        if (folder?.parent_id === targetCategoryId) {
+          console.log("Folder already in target location");
+          return;
+        }
         
         // Check if target is a child of the dragged folder
         const isChild = (parentId: string, childId: string): boolean => {
