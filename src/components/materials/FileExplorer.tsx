@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -76,6 +76,7 @@ import {
   FolderInput,
   Copy,
   FolderSymlink,
+  Lasso,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -85,6 +86,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Material } from "@/hooks/useMaterials";
 import { Category, useCategories } from "@/hooks/useCategories";
 import { DraggableMaterialCard } from "./DraggableMaterialCard";
@@ -92,6 +99,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import { useLassoSelection } from "@/hooks/useLassoSelection";
 
 interface FileExplorerProps {
   materials: Material[];
@@ -555,6 +563,8 @@ function DraggableFolderCard({
               setDropRef(el);
               setDragRef(el);
             }}
+            data-selectable-item
+            data-item-id={`folder-${category.id}`}
             className={cn(
               "cursor-pointer transition-all hover:shadow-md group",
               isOver && "ring-2 ring-primary bg-primary/10 shadow-lg",
@@ -642,6 +652,8 @@ function DraggableFolderCard({
             setDropRef(el);
             setDragRef(el);
           }}
+          data-selectable-item
+          data-item-id={`folder-${category.id}`}
           className={cn(
             "cursor-pointer transition-all hover:shadow-md group",
             isOver && "ring-2 ring-primary bg-primary/10 shadow-lg",
@@ -787,6 +799,42 @@ export function FileExplorer({
   const [parentCategory, setParentCategory] = useState<Category | null>(null);
   const [categoryName, setCategoryName] = useState("");
 
+  // Lasso selection
+  const contentAreaRef = useRef<HTMLDivElement>(null);
+  
+  const handleLassoSelectionChange = useCallback((selectedIds: Set<string>) => {
+    // Separate folder and material selections
+    const folderIds = new Set<string>();
+    const materialIds = new Set<string>();
+    
+    selectedIds.forEach(id => {
+      if (id.startsWith('folder-')) {
+        folderIds.add(id.replace('folder-', ''));
+      } else if (id.startsWith('material-')) {
+        materialIds.add(id.replace('material-', ''));
+      }
+    });
+    
+    if (folderIds.size > 0 || materialIds.size > 0) {
+      setSelectionMode(true);
+    }
+    setSelectedFolders(folderIds);
+    setSelectedMaterials(materialIds);
+  }, []);
+
+  const {
+    isLassoActive,
+    lassoRect,
+    handleMouseDown: handleLassoMouseDown,
+    handleMouseMove: handleLassoMouseMove,
+    handleMouseUp: handleLassoMouseUp,
+  } = useLassoSelection({
+    containerRef: contentAreaRef,
+    onSelectionChange: handleLassoSelectionChange,
+    itemSelector: '[data-selectable-item]',
+    getItemId: (element) => element.getAttribute('data-item-id'),
+    enabled: true,
+  });
   const { roots, map } = buildCategoryTree(categories);
   const categoryPath = getCategoryPath(currentCategory, categories);
   
@@ -1453,12 +1501,32 @@ export function FileExplorer({
           {/* Content area with root drop zone */}
           <ScrollArea className="flex-1">
             <div 
-              ref={setContentRootRef}
+              ref={(el) => {
+                setContentRootRef(el);
+                if (contentAreaRef) {
+                  (contentAreaRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+                }
+              }}
               className={cn(
-                "p-4 min-h-full transition-colors",
+                "p-4 min-h-full transition-colors relative select-none",
                 isOverContentArea && "bg-primary/5 ring-2 ring-inset ring-primary/30"
               )}
+              onMouseDown={handleLassoMouseDown}
+              onMouseMove={handleLassoMouseMove}
+              onMouseUp={handleLassoMouseUp}
             >
+              {/* Lasso selection box */}
+              {isLassoActive && lassoRect && (
+                <div
+                  className="absolute border-2 border-dashed border-primary bg-primary/10 pointer-events-none z-50"
+                  style={{
+                    left: lassoRect.x,
+                    top: lassoRect.y,
+                    width: lassoRect.width,
+                    height: lassoRect.height,
+                  }}
+                />
+              )}
               {/* Show child folders */}
               {childCategories.length > 0 && (
                 <div className="mb-6">
@@ -1475,15 +1543,24 @@ export function FileExplorer({
                       </h4>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button
-                        variant={selectionMode ? "secondary" : "ghost"}
-                        size="sm"
-                        className="h-7"
-                        onClick={toggleSelectionMode}
-                      >
-                        <CheckSquare className="h-3.5 w-3.5 mr-1" />
-                        {selectionMode ? "取消" : "选择"}
-                      </Button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant={selectionMode ? "secondary" : "ghost"}
+                              size="sm"
+                              className="h-7"
+                              onClick={toggleSelectionMode}
+                            >
+                              <CheckSquare className="h-3.5 w-3.5 mr-1" />
+                              {selectionMode ? "取消" : "选择"}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>按住 Shift 拖拽可框选多个项目</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                       <Tabs value={folderViewMode} onValueChange={(v) => setFolderViewMode(v as "grid" | "list")}>
                         <TabsList className="h-7">
                           <TabsTrigger value="grid" className="h-5 px-1.5">
@@ -1570,15 +1647,24 @@ export function FileExplorer({
                       </h4>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button
-                        variant={selectionMode ? "secondary" : "ghost"}
-                        size="sm"
-                        className="h-7"
-                        onClick={toggleSelectionMode}
-                      >
-                        <CheckSquare className="h-3.5 w-3.5 mr-1" />
-                        {selectionMode ? "取消" : "选择"}
-                      </Button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant={selectionMode ? "secondary" : "ghost"}
+                              size="sm"
+                              className="h-7"
+                              onClick={toggleSelectionMode}
+                            >
+                              <CheckSquare className="h-3.5 w-3.5 mr-1" />
+                              {selectionMode ? "取消" : "选择"}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>按住 Shift 拖拽可框选多个项目</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                       <Tabs value={fileViewMode} onValueChange={(v) => setFileViewMode(v as "grid" | "list")}>
                         <TabsList className="h-7">
                           <TabsTrigger value="grid" className="h-5 px-1.5">

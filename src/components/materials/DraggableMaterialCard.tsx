@@ -301,6 +301,8 @@ export function DraggableMaterialCard({
               isDragging && "shadow-lg ring-2 ring-primary",
               isSelected && "ring-2 ring-primary bg-primary/5"
             )}
+            data-selectable-item
+            data-item-id={`material-${material.id}`}
             onClick={() => {
               if (selectionMode && onSelect) {
                 onSelect(material.id, !isSelected);
