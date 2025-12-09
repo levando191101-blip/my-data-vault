@@ -32,13 +32,15 @@ export function MaterialPreviewDialog({
     e.preventDefault();
     e.stopPropagation();
     if (publicUrl) {
-      const link = document.createElement("a");
-      link.href = publicUrl;
-      link.download = material.file_name;
-      link.target = "_blank";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      setTimeout(() => {
+        const link = document.createElement("a");
+        link.href = publicUrl;
+        link.download = material.file_name;
+        link.target = "_blank";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }, 0);
     }
   };
 
