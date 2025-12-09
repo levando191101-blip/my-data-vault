@@ -907,68 +907,51 @@ export function FileExplorer({
 
   const effectiveShowSidebar = layoutMode === "dual" && showSidebar;
 
-  // Custom collision detection: prioritize specific folder targets, then fall back to area zones
+  // Custom collision detection: prioritize specific folder targets over area zones
   const customCollisionDetection: CollisionDetection = useCallback((args) => {
-    // Get all droppable containers for debugging
-    const containers = args.droppableContainers;
-    
-    // Log all registered droppables (only once per drag)
-    if (!(window as any)._dndDebugLogged) {
-      console.log("All registered droppables:", containers.map(c => ({ id: c.id, data: c.data?.current })));
-      (window as any)._dndDebugLogged = true;
-    }
-    
-    // Get all collisions using different methods
-    const rectCollisions = rectIntersection(args);
+    // Use pointerWithin for precise detection
     const pointerCollisions = pointerWithin(args);
-    const closestCollisions = closestCenter(args);
     
-    console.log("Collisions - rect:", rectCollisions.map(c => c.id), 
-                "pointer:", pointerCollisions.map(c => c.id),
-                "closest:", closestCollisions.map(c => c.id));
-    
-    // Check if sidebar root is in any collision list
-    const hasSidebarRoot = [...rectCollisions, ...pointerCollisions, ...closestCollisions]
-      .some(c => c.id === "folder-root-sidebar");
-    
-    if (hasSidebarRoot) {
-      console.log("✓ Sidebar root detected!");
-      const collision = [...rectCollisions, ...pointerCollisions, ...closestCollisions]
-        .find(c => c.id === "folder-root-sidebar");
-      return collision ? [collision] : [];
+    // If pointer is directly over something, use that
+    if (pointerCollisions.length > 0) {
+      // Priority 1: Sidebar folder nodes (folder-{id})
+      const sidebarFolderCollision = pointerCollisions.find(c => {
+        const id = String(c.id);
+        return id.startsWith("folder-") && 
+               id !== "folder-root-sidebar" &&
+               !id.startsWith("card-folder-");
+      });
+      if (sidebarFolderCollision) return [sidebarFolderCollision];
+      
+      // Priority 2: Main area folder cards (card-folder-{id})
+      const cardFolderCollision = pointerCollisions.find(c => 
+        String(c.id).startsWith("card-folder-")
+      );
+      if (cardFolderCollision) return [cardFolderCollision];
+      
+      // Priority 3: Sidebar root (for moving to root)
+      const sidebarRootCollision = pointerCollisions.find(c => 
+        c.id === "folder-root-sidebar"
+      );
+      if (sidebarRootCollision) return [sidebarRootCollision];
+      
+      // Priority 4: Content area (current directory)
+      const contentAreaCollision = pointerCollisions.find(c => 
+        c.id === "content-area-current"
+      );
+      if (contentAreaCollision) return [contentAreaCollision];
+      
+      return [pointerCollisions[0]];
     }
     
-    // Combine rect and pointer collisions
-    const allCollisions = [...rectCollisions];
-    pointerCollisions.forEach(pc => {
-      if (!allCollisions.find(c => c.id === pc.id)) {
-        allCollisions.push(pc);
-      }
-    });
-    
-    if (allCollisions.length === 0) {
-      return closestCollisions;
+    // Fallback to rectIntersection if pointer not over anything
+    const rectCollisions = rectIntersection(args);
+    if (rectCollisions.length > 0) {
+      return [rectCollisions[0]];
     }
     
-    // Priority 1: Specific folder cards (not the area zones)
-    const folderCardCollision = allCollisions.find(c => {
-      const data = c.data?.droppableContainer?.data?.current;
-      return data?.type === "folder" && 
-             c.id !== "folder-root-sidebar" && 
-             c.id !== "content-area-current";
-    });
-    
-    if (folderCardCollision) {
-      return [folderCardCollision];
-    }
-    
-    // Priority 2: Content area (for moving to current directory)
-    const contentAreaCollision = allCollisions.find(c => c.id === "content-area-current");
-    if (contentAreaCollision) {
-      return [contentAreaCollision];
-    }
-    
-    return [allCollisions[0]];
+    // Last resort: closestCenter
+    return closestCenter(args);
   }, []);
 
   return (
