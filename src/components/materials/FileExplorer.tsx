@@ -2,8 +2,7 @@ import { useState } from "react";
 import {
   DndContext,
   DragOverlay,
-  rectIntersection,
-  pointerWithin,
+  closestCenter,
   PointerSensor,
   useSensor,
   useSensors,
@@ -11,7 +10,6 @@ import {
   DragEndEvent,
   useDroppable,
   useDraggable,
-  CollisionDetection,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -879,47 +877,10 @@ export function FileExplorer({
   const effectiveShowSidebar = layoutMode === "dual" && showSidebar;
   const isOverAnyRoot = isOverSidebarRoot || isOverContentRoot;
 
-  // Custom collision detection: prioritize specific targets, fallback to root zones
-  const customCollisionDetection: CollisionDetection = (args) => {
-    // First try rectIntersection for precise detection
-    const rectCollisions = rectIntersection(args);
-    
-    // Filter out root zones from initial detection to prioritize specific targets
-    const specificTargets = rectCollisions.filter(
-      c => c.id !== "folder-root-sidebar" && c.id !== "content-area-root"
-    );
-    
-    // If we have specific targets (folders, files), use them
-    if (specificTargets.length > 0) {
-      console.log("Found specific target:", specificTargets[0].id);
-      return specificTargets;
-    }
-    
-    // Otherwise, check if we're over any root zone
-    const rootCollisions = rectCollisions.filter(
-      c => c.id === "folder-root-sidebar" || c.id === "content-area-root"
-    );
-    
-    if (rootCollisions.length > 0) {
-      console.log("Found root target:", rootCollisions[0].id);
-      return rootCollisions;
-    }
-    
-    // Also try pointerWithin as fallback
-    const pointerCollisions = pointerWithin(args);
-    if (pointerCollisions.length > 0) {
-      console.log("Pointer within target:", pointerCollisions[0].id);
-      return pointerCollisions;
-    }
-    
-    console.log("No collision detected");
-    return [];
-  };
-
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={customCollisionDetection}
+      collisionDetection={closestCenter}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
@@ -939,14 +900,17 @@ export function FileExplorer({
                 <div
                   ref={setSidebarRootRef}
                   className={cn(
-                    "flex items-center gap-2 py-2 px-3 rounded-md cursor-pointer transition-all",
+                    "flex items-center gap-2 py-3 px-3 rounded-md cursor-pointer transition-all min-h-[44px]",
                     currentCategory === null ? "bg-accent text-accent-foreground" : "hover:bg-muted",
                     isOverSidebarRoot && "ring-2 ring-primary bg-primary/10 scale-[1.02]"
                   )}
                   onClick={() => setCurrentCategory(null)}
                 >
-                  <FolderOpen className="h-4 w-4 text-primary shrink-0" />
+                  <FolderOpen className="h-5 w-5 text-primary shrink-0" />
                   <span className="text-sm font-medium">全部文件</span>
+                  {isOverSidebarRoot && (
+                    <span className="ml-auto text-xs text-primary">放置到根目录</span>
+                  )}
                 </div>
                 
                 {roots.map((root) => (
@@ -964,6 +928,22 @@ export function FileExplorer({
                 ))}
               </div>
             </ScrollArea>
+            
+            {/* Bottom drop zone for root - always visible during drag */}
+            <div
+              ref={(el) => {
+                // Also register this as part of the sidebar root droppable
+                if (el && isOverSidebarRoot) {
+                  el.classList.add("ring-2", "ring-primary", "bg-primary/10");
+                }
+              }}
+              className={cn(
+                "p-3 border-t text-center text-xs text-muted-foreground transition-all",
+                isOverSidebarRoot && "ring-2 ring-primary bg-primary/10 text-primary font-medium"
+              )}
+            >
+              {isOverSidebarRoot ? "释放以移动到根目录" : "拖拽到此处移动到根目录"}
+            </div>
           </div>
         )}
 
