@@ -203,73 +203,55 @@ export function DraggableMaterialCard({
     material.mime_type === "application/pdf"
   );
 
-  // Context menu content - using onClick with stopPropagation to prevent page refresh
+  // Context menu content
   const contextMenuContent = (
-    <ContextMenuContent className="bg-popover w-52" onClick={(e) => e.stopPropagation()}>
+    <ContextMenuContent className="bg-popover w-52">
       {canPreview && (
         <>
-          <div
-            className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
-            onClick={(e) => { e.stopPropagation(); e.preventDefault(); onPreview(material); }}
-          >
+          <ContextMenuItem onClick={() => onPreview(material)}>
             <Eye className="mr-2 h-4 w-4" />
             预览
-          </div>
+          </ContextMenuItem>
           <ContextMenuSeparator />
         </>
       )}
-      <div
-        className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
-        onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleOpen(); }}
-      >
+      <ContextMenuItem onClick={handleOpen}>
         <ExternalLink className="mr-2 h-4 w-4" />
         打开
-      </div>
-      <div
-        className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
-        onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleDownload(); }}
-      >
+      </ContextMenuItem>
+      <ContextMenuItem onClick={handleDownload}>
         <Download className="mr-2 h-4 w-4" />
         下载
-      </div>
+      </ContextMenuItem>
       <ContextMenuSeparator />
-      <div
-        className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
-        onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleStartEdit(); }}
-      >
+      <ContextMenuItem onClick={handleStartEdit}>
         <Pencil className="mr-2 h-4 w-4" />
         编辑
-      </div>
+      </ContextMenuItem>
       {onMoveTo && (
         <ContextMenuSub>
           <ContextMenuSubTrigger>
             <FolderSymlink className="mr-2 h-4 w-4" />
             移动到...
           </ContextMenuSubTrigger>
-          <ContextMenuSubContent className="bg-popover w-48 max-h-64 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div
-              className={cn(
-                "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground",
-                material.category_id === null && "opacity-50 pointer-events-none"
-              )}
-              onClick={(e) => { e.stopPropagation(); e.preventDefault(); onMoveTo(material.id, null); }}
+          <ContextMenuSubContent className="bg-popover w-48 max-h-64 overflow-y-auto">
+            <ContextMenuItem
+              disabled={material.category_id === null}
+              onClick={() => onMoveTo(material.id, null)}
             >
               <FolderOpen className="mr-2 h-4 w-4" />
               根目录
-            </div>
+            </ContextMenuItem>
             <ContextMenuSeparator />
             {flatCats.map(cat => (
-              <div
+              <ContextMenuItem
                 key={cat.id}
-                className={cn(
-                  "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground",
-                  material.category_id === cat.id && "opacity-50 pointer-events-none"
-                )}
-                onClick={(e) => { e.stopPropagation(); e.preventDefault(); onMoveTo(material.id, cat.id); }}
+                disabled={material.category_id === cat.id}
+                onClick={() => onMoveTo(material.id, cat.id)}
               >
                 <Folder className="mr-2 h-4 w-4" />
                 <span className="truncate">{"　".repeat(cat.level)}{cat.name}</span>
-              </div>
+              </ContextMenuItem>
             ))}
             {flatCats.length === 0 && (
               <div className="px-2 py-1.5 text-muted-foreground text-xs">没有可用的目标文件夹</div>
@@ -283,24 +265,20 @@ export function DraggableMaterialCard({
             <Copy className="mr-2 h-4 w-4" />
             复制到...
           </ContextMenuSubTrigger>
-          <ContextMenuSubContent className="bg-popover w-48 max-h-64 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div
-              className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
-              onClick={(e) => { e.stopPropagation(); e.preventDefault(); onCopyTo(material.id, null); }}
-            >
+          <ContextMenuSubContent className="bg-popover w-48 max-h-64 overflow-y-auto">
+            <ContextMenuItem onClick={() => onCopyTo(material.id, null)}>
               <FolderOpen className="mr-2 h-4 w-4" />
               根目录
-            </div>
+            </ContextMenuItem>
             <ContextMenuSeparator />
             {flatCats.map(cat => (
-              <div
+              <ContextMenuItem
                 key={cat.id}
-                className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
-                onClick={(e) => { e.stopPropagation(); e.preventDefault(); onCopyTo(material.id, cat.id); }}
+                onClick={() => onCopyTo(material.id, cat.id)}
               >
                 <Folder className="mr-2 h-4 w-4" />
                 <span className="truncate">{"　".repeat(cat.level)}{cat.name}</span>
-              </div>
+              </ContextMenuItem>
             ))}
             {flatCats.length === 0 && (
               <div className="px-2 py-1.5 text-muted-foreground text-xs">没有可用的目标文件夹</div>
@@ -309,13 +287,13 @@ export function DraggableMaterialCard({
         </ContextMenuSub>
       )}
       <ContextMenuSeparator />
-      <div
-        className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground text-destructive"
-        onClick={(e) => { e.stopPropagation(); e.preventDefault(); onDelete(material.id, material.file_path); }}
+      <ContextMenuItem 
+        className="text-destructive"
+        onClick={() => onDelete(material.id, material.file_path)}
       >
         <Trash2 className="mr-2 h-4 w-4" />
         删除
-      </div>
+      </ContextMenuItem>
     </ContextMenuContent>
   );
 
@@ -449,44 +427,32 @@ export function DraggableMaterialCard({
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}>
+                          <DropdownMenuContent align="end">
                             {canPreview && (
-                              <div
-                                className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
-                                onClick={(e) => { e.stopPropagation(); e.preventDefault(); onPreview(material); }}
-                              >
+                              <DropdownMenuItem onClick={() => onPreview(material)}>
                                 <Eye className="mr-2 h-4 w-4" />
                                 预览
-                              </div>
+                              </DropdownMenuItem>
                             )}
-                            <div
-                              className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
-                              onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleOpen(); }}
-                            >
+                            <DropdownMenuItem onClick={handleOpen}>
                               <ExternalLink className="mr-2 h-4 w-4" />
                               打开
-                            </div>
-                            <div
-                              className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
-                              onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleDownload(); }}
-                            >
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={handleDownload}>
                               <Download className="mr-2 h-4 w-4" />
                               下载
-                            </div>
-                            <div
-                              className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
-                              onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleStartEdit(); }}
-                            >
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={handleStartEdit}>
                               <Pencil className="mr-2 h-4 w-4" />
                               编辑
-                            </div>
-                            <div
-                              className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground text-destructive"
-                              onClick={(e) => { e.stopPropagation(); e.preventDefault(); onDelete(material.id, material.file_path); }}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-destructive"
+                              onClick={() => onDelete(material.id, material.file_path)}
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               删除
-                            </div>
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>

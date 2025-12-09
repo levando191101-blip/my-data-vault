@@ -29,7 +29,10 @@ export function useMaterials() {
   const fetchMaterials = async () => {
     if (!user) return;
 
-    setLoading(true);
+    // Only show loading on initial fetch (when no data exists)
+    if (materials.length === 0) {
+      setLoading(true);
+    }
     
     // Fetch materials
     const { data: materialsData, error: materialsError } = await supabase
@@ -163,7 +166,7 @@ export function useMaterials() {
 
   useEffect(() => {
     fetchMaterials();
-  }, [user]);
+  }, [user?.id]);
 
   return {
     materials,
