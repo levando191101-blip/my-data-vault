@@ -825,9 +825,6 @@ export function FileExplorer({
   const {
     isLassoActive,
     lassoRect,
-    handleMouseDown: handleLassoMouseDown,
-    handleMouseMove: handleLassoMouseMove,
-    handleMouseUp: handleLassoMouseUp,
   } = useLassoSelection({
     containerRef: contentAreaRef,
     onSelectionChange: handleLassoSelectionChange,
@@ -1511,9 +1508,6 @@ export function FileExplorer({
                 "p-4 min-h-full transition-colors relative select-none",
                 isOverContentArea && "bg-primary/5 ring-2 ring-inset ring-primary/30"
               )}
-              onMouseDown={handleLassoMouseDown}
-              onMouseMove={handleLassoMouseMove}
-              onMouseUp={handleLassoMouseUp}
             >
               {/* Lasso selection box */}
               {isLassoActive && lassoRect && (
