@@ -51,6 +51,7 @@ interface CategorySelectorProps {
   selectedCategory: string | null;
   onCategoryChange: (categoryId: string | null) => void;
   editable?: boolean;
+  onRefresh?: () => void;
 }
 
 // Build tree structure from flat categories
@@ -528,6 +529,7 @@ export function CategorySelector({
   selectedCategory,
   onCategoryChange,
   editable = false,
+  onRefresh,
 }: CategorySelectorProps) {
   const [viewMode, setViewMode] = useState<"badge" | "grid" | "tree" | "breadcrumb">("badge");
   const [editMode, setEditMode] = useState(false);
@@ -545,6 +547,7 @@ export function CategorySelector({
     setCategoryName("");
     setParentCategory(null);
     setDialogOpen(false);
+    onRefresh?.();
   };
 
   const handleEdit = async () => {
@@ -553,13 +556,16 @@ export function CategorySelector({
     setCategoryName("");
     setEditingCategory(null);
     setDialogOpen(false);
+    onRefresh?.();
   };
 
   const handleDelete = async (category: Category) => {
     if (confirm(`确定要删除分类「${category.name}」吗？`)) {
       await deleteCategory(category.id);
+      onRefresh?.();
     }
   };
+
 
   const openCreateDialog = (parent: Category | null = null) => {
     setDialogType("create");
