@@ -142,46 +142,32 @@ export function DraggableMaterialCard({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const handleDownload = (e?: React.MouseEvent) => {
-    e?.preventDefault();
-    e?.stopPropagation();
+  const handleDownload = () => {
     const { data } = supabase.storage
       .from("materials")
       .getPublicUrl(material.file_path);
 
     if (data?.publicUrl) {
-      // Use setTimeout to escape event propagation
-      setTimeout(() => {
-        const link = document.createElement("a");
-        link.href = data.publicUrl;
-        link.download = material.file_name;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }, 0);
+      // Create a temporary link for download
+      const link = document.createElement("a");
+      link.href = data.publicUrl;
+      link.download = material.file_name;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      // Clean up after a short delay
+      setTimeout(() => document.body.removeChild(link), 100);
     }
   };
 
-  const handleOpen = (e?: React.MouseEvent) => {
-    e?.preventDefault();
-    e?.stopPropagation();
+  const handleOpen = () => {
     const { data } = supabase.storage
       .from("materials")
       .getPublicUrl(material.file_path);
 
     if (data?.publicUrl) {
-      // Use setTimeout to escape event propagation
-      setTimeout(() => {
-        const link = document.createElement("a");
-        link.href = data.publicUrl;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }, 0);
+      // Open in new tab - this should not affect current page
+      window.open(data.publicUrl, "_blank", "noopener,noreferrer");
     }
   };
 
