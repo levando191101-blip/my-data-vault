@@ -56,7 +56,19 @@ import {
   Columns,
   Square,
   GripVertical,
+  CheckSquare,
+  X,
+  Download,
+  FolderInput,
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Material } from "@/hooks/useMaterials";
 import { Category, useCategories } from "@/hooks/useCategories";
 import { DraggableMaterialCard } from "./DraggableMaterialCard";
@@ -458,9 +470,14 @@ export function FileExplorer({
   const [activeItem, setActiveItem] = useState<DragItem | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Batch selection states
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedMaterials, setSelectedMaterials] = useState<Set<string>>(new Set());
+  const [batchMoveCategoryId, setBatchMoveCategoryId] = useState<string>("none");
+
   // Dialog states
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogType, setDialogType] = useState<"create" | "edit">("create");
+  const [dialogType, setDialogType] = useState<"create" | "edit" | "batch-move">("create");
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [parentCategory, setParentCategory] = useState<Category | null>(null);
   const [categoryName, setCategoryName] = useState("");
@@ -532,6 +549,95 @@ export function FileExplorer({
     setCategoryName(category.name);
     setDialogOpen(true);
   };
+
+  // Batch selection handlers
+  const toggleSelectionMode = () => {
+    if (selectionMode) {
+      setSelectedMaterials(new Set());
+    }
+    setSelectionMode(!selectionMode);
+  };
+
+  const handleSelectMaterial = (id: string, selected: boolean) => {
+    setSelectedMaterials(prev => {
+      const next = new Set(prev);
+      if (selected) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedMaterials.size === currentMaterials.length) {
+      setSelectedMaterials(new Set());
+    } else {
+      setSelectedMaterials(new Set(currentMaterials.map(m => m.id)));
+    }
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedMaterials.size === 0) return;
+    if (!confirm(`确定要删除选中的 ${selectedMaterials.size} 个文件吗？`)) return;
+    
+    const materialsToDelete = materials.filter(m => selectedMaterials.has(m.id));
+    for (const material of materialsToDelete) {
+      await onDelete(material.id, material.file_path);
+    }
+    setSelectedMaterials(new Set());
+    setSelectionMode(false);
+    toast({ title: `已删除 ${materialsToDelete.length} 个文件` });
+  };
+
+  const handleBatchMove = async () => {
+    if (selectedMaterials.size === 0) return;
+    
+    setIsSaving(true);
+    const targetCategoryId = batchMoveCategoryId === "none" ? null : batchMoveCategoryId;
+    
+    for (const materialId of selectedMaterials) {
+      const material = materials.find(m => m.id === materialId);
+      if (material) {
+        await onSave(materialId, {
+          title: material.title,
+          categoryId: targetCategoryId,
+          tagIds: material.tags?.map(t => t.id) || [],
+        });
+      }
+    }
+    
+    setIsSaving(false);
+    setSelectedMaterials(new Set());
+    setSelectionMode(false);
+    setDialogOpen(false);
+    toast({ title: `已移动 ${selectedMaterials.size} 个文件` });
+  };
+
+  const handleBatchDownload = async () => {
+    if (selectedMaterials.size === 0) return;
+    
+    const materialsToDownload = materials.filter(m => selectedMaterials.has(m.id));
+    for (const material of materialsToDownload) {
+      const { data } = supabase.storage.from("materials").getPublicUrl(material.file_path);
+      if (data?.publicUrl) {
+        window.open(data.publicUrl, "_blank");
+      }
+    }
+  };
+
+  // Build flat category list for select
+  const buildFlatCategories = (): { id: string; name: string; level: number }[] => {
+    const result: { id: string; name: string; level: number }[] = [];
+    const addWithChildren = (cat: Category & { children: any[] }, level: number) => {
+      result.push({ id: cat.id, name: cat.name, level });
+      cat.children.forEach((child: any) => addWithChildren(child, level + 1));
+    };
+    roots.forEach(root => addWithChildren(root, 0));
+    return result;
+  };
+  const flatCategories = buildFlatCategories();
 
   // Drag handlers
   const handleDragStart = (event: DragStartEvent) => {
@@ -808,18 +914,78 @@ export function FileExplorer({
               {currentMaterials.length > 0 ? (
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-medium text-muted-foreground">文件</h4>
-                    <Tabs value={fileViewMode} onValueChange={(v) => setFileViewMode(v as "grid" | "list")}>
-                      <TabsList className="h-7">
-                        <TabsTrigger value="grid" className="h-5 px-1.5">
-                          <LayoutGrid className="h-3.5 w-3.5" />
-                        </TabsTrigger>
-                        <TabsTrigger value="list" className="h-5 px-1.5">
-                          <List className="h-3.5 w-3.5" />
-                        </TabsTrigger>
-                      </TabsList>
-                    </Tabs>
+                    <div className="flex items-center gap-2">
+                      {selectionMode && (
+                        <Checkbox
+                          checked={selectedMaterials.size === currentMaterials.length && currentMaterials.length > 0}
+                          onCheckedChange={handleSelectAll}
+                        />
+                      )}
+                      <h4 className="text-sm font-medium text-muted-foreground">
+                        文件 {selectionMode && selectedMaterials.size > 0 && `(已选 ${selectedMaterials.size})`}
+                      </h4>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant={selectionMode ? "secondary" : "ghost"}
+                        size="sm"
+                        className="h-7"
+                        onClick={toggleSelectionMode}
+                      >
+                        <CheckSquare className="h-3.5 w-3.5 mr-1" />
+                        {selectionMode ? "取消" : "选择"}
+                      </Button>
+                      <Tabs value={fileViewMode} onValueChange={(v) => setFileViewMode(v as "grid" | "list")}>
+                        <TabsList className="h-7">
+                          <TabsTrigger value="grid" className="h-5 px-1.5">
+                            <LayoutGrid className="h-3.5 w-3.5" />
+                          </TabsTrigger>
+                          <TabsTrigger value="list" className="h-5 px-1.5">
+                            <List className="h-3.5 w-3.5" />
+                          </TabsTrigger>
+                        </TabsList>
+                      </Tabs>
+                    </div>
                   </div>
+
+                  {/* Batch action bar */}
+                  {selectionMode && selectedMaterials.size > 0 && (
+                    <div className="mb-3 p-2 bg-muted rounded-lg flex items-center gap-2 flex-wrap">
+                      <span className="text-sm text-muted-foreground">
+                        已选择 {selectedMaterials.size} 个文件
+                      </span>
+                      <div className="flex-1" />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleBatchDownload}
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        下载
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setDialogType("batch-move");
+                          setBatchMoveCategoryId("none");
+                          setDialogOpen(true);
+                        }}
+                      >
+                        <FolderInput className="h-4 w-4 mr-1" />
+                        移动
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleBatchDelete}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        删除
+                      </Button>
+                    </div>
+                  )}
+
                   <SortableContext
                     items={currentMaterials.map((m) => m.id)}
                     strategy={rectSortingStrategy}
@@ -837,6 +1003,9 @@ export function FileExplorer({
                           onDelete={onDelete}
                           onSave={onSave}
                           onPreview={onPreview}
+                          selectionMode={selectionMode}
+                          isSelected={selectedMaterials.has(material.id)}
+                          onSelect={handleSelectMaterial}
                         />
                       ))}
                     </div>
@@ -882,25 +1051,62 @@ export function FileExplorer({
                 ? parentCategory 
                   ? `在「${parentCategory.name}」下新建文件夹` 
                   : "新建文件夹"
-                : "重命名文件夹"
+                : dialogType === "edit"
+                ? "重命名文件夹"
+                : "移动文件"
               }
             </DialogTitle>
           </DialogHeader>
-          <Input
-            placeholder="文件夹名称"
-            value={categoryName}
-            onChange={(e) => setCategoryName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && (dialogType === "create" ? handleCreateCategory() : handleEditCategory())}
-            autoFocus
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              取消
-            </Button>
-            <Button onClick={dialogType === "create" ? handleCreateCategory : handleEditCategory}>
-              {dialogType === "create" ? "创建" : "保存"}
-            </Button>
-          </DialogFooter>
+          
+          {dialogType === "batch-move" ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                将 {selectedMaterials.size} 个文件移动到：
+              </p>
+              <Select
+                value={batchMoveCategoryId}
+                onValueChange={setBatchMoveCategoryId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="选择目标文件夹" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">根目录（无分类）</SelectItem>
+                  {flatCategories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {"　".repeat(cat.level)}{cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                  取消
+                </Button>
+                <Button onClick={handleBatchMove} disabled={isSaving}>
+                  {isSaving ? "移动中..." : "确认移动"}
+                </Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              <Input
+                placeholder="文件夹名称"
+                value={categoryName}
+                onChange={(e) => setCategoryName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && (dialogType === "create" ? handleCreateCategory() : handleEditCategory())}
+                autoFocus
+              />
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                  取消
+                </Button>
+                <Button onClick={dialogType === "create" ? handleCreateCategory : handleEditCategory}>
+                  {dialogType === "create" ? "创建" : "保存"}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </DndContext>
