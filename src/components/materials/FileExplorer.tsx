@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   DndContext,
   DragOverlay,
-  closestCenter,
+  pointerWithin,
   PointerSensor,
   useSensor,
   useSensors,
@@ -846,17 +846,20 @@ export function FileExplorer({
     data: { type: "folder", categoryId: null },
   });
 
-  const { setNodeRef: setBreadcrumbRootRef, isOver: isOverBreadcrumbRoot } = useDroppable({
-    id: "folder-root-breadcrumb",
+  // Content area root drop zone - for dropping items to root when in a subfolder
+  const { setNodeRef: setContentRootRef, isOver: isOverContentRoot } = useDroppable({
+    id: "content-area-root",
     data: { type: "folder", categoryId: null },
+    disabled: currentCategory === null, // Disable when already at root
   });
 
   const effectiveShowSidebar = layoutMode === "dual" && showSidebar;
+  const isOverAnyRoot = isOverSidebarRoot || isOverContentRoot;
 
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={pointerWithin}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
@@ -872,20 +875,18 @@ export function FileExplorer({
             </div>
             <ScrollArea className="flex-1">
               <div className="p-2 space-y-0.5">
-                {/* Root folder */}
+                {/* Root folder - enlarged droppable area */}
                 <div
                   ref={setSidebarRootRef}
                   className={cn(
-                    "flex items-center gap-1 py-1 px-2 rounded-md cursor-pointer transition-colors",
+                    "flex items-center gap-2 py-2 px-3 rounded-md cursor-pointer transition-all",
                     currentCategory === null ? "bg-accent text-accent-foreground" : "hover:bg-muted",
-                    isOverSidebarRoot && "ring-2 ring-primary bg-primary/10"
+                    isOverSidebarRoot && "ring-2 ring-primary bg-primary/10 scale-[1.02]"
                   )}
                   onClick={() => setCurrentCategory(null)}
                 >
-                  <span className="w-4" />
-                  <span className="w-5" />
                   <FolderOpen className="h-4 w-4 text-primary shrink-0" />
-                  <span className="text-sm">全部文件</span>
+                  <span className="text-sm font-medium">全部文件</span>
                 </div>
                 
                 {roots.map((root) => (
@@ -929,17 +930,12 @@ export function FileExplorer({
             <Breadcrumb className="flex-1">
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <div
-                    ref={setBreadcrumbRootRef}
-                    className={cn(
-                      "cursor-pointer px-1 py-0.5 rounded transition-colors",
-                      !currentCategory && "font-semibold",
-                      isOverBreadcrumbRoot && "ring-2 ring-primary bg-primary/10"
-                    )}
+                  <BreadcrumbLink
+                    className={cn("cursor-pointer", !currentCategory && "font-semibold")}
                     onClick={() => setCurrentCategory(null)}
                   >
                     全部文件
-                  </div>
+                  </BreadcrumbLink>
                 </BreadcrumbItem>
                 {categoryPath.map((cat, index) => (
                   <BreadcrumbItem key={cat.id}>
@@ -982,9 +978,15 @@ export function FileExplorer({
 
           </div>
 
-          {/* Content area */}
+          {/* Content area with root drop zone */}
           <ScrollArea className="flex-1">
-            <div className="p-4">
+            <div 
+              ref={setContentRootRef}
+              className={cn(
+                "p-4 min-h-full transition-colors",
+                isOverContentRoot && currentCategory !== null && "bg-primary/5 ring-2 ring-inset ring-primary/30"
+              )}
+            >
               {/* Show child folders */}
               {childCategories.length > 0 && (
                 <div className="mb-6">
