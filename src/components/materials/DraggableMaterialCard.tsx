@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   FileText,
   Image,
@@ -36,6 +37,7 @@ import {
 import { Material } from "@/hooks/useMaterials";
 import { supabase } from "@/integrations/supabase/client";
 import { Category } from "@/hooks/useCategories";
+import { cn } from "@/lib/utils";
 
 interface DraggableMaterialCardProps {
   material: Material;
@@ -44,6 +46,9 @@ interface DraggableMaterialCardProps {
   onSave: (id: string, data: { title: string; categoryId: string | null; tagIds: string[] }) => Promise<boolean>;
   onPreview?: (material: Material) => void;
   isDragging?: boolean;
+  isSelected?: boolean;
+  onSelect?: (id: string, selected: boolean) => void;
+  selectionMode?: boolean;
 }
 
 const getFileIcon = (fileType: string) => {
@@ -93,6 +98,9 @@ export function DraggableMaterialCard({
   onDelete,
   onSave,
   onPreview,
+  isSelected = false,
+  onSelect,
+  selectionMode = false,
 }: DraggableMaterialCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(material.title);
@@ -164,18 +172,39 @@ export function DraggableMaterialCard({
 
   return (
     <div ref={setNodeRef} style={style}>
-      <Card className={`group hover:shadow-md transition-shadow ${isDragging ? 'shadow-lg ring-2 ring-primary' : ''}`}>
+      <Card 
+        className={cn(
+          "group hover:shadow-md transition-shadow",
+          isDragging && "shadow-lg ring-2 ring-primary",
+          isSelected && "ring-2 ring-primary bg-primary/5"
+        )}
+        onClick={() => {
+          if (selectionMode && onSelect) {
+            onSelect(material.id, !isSelected);
+          }
+        }}
+      >
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
-            {/* Drag handle */}
-            <button
-              {...attributes}
-              {...listeners}
-              className="mt-2 cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors"
-              title="拖拽排序"
-            >
-              <GripVertical className="h-5 w-5 text-muted-foreground" />
-            </button>
+            {/* Selection checkbox or Drag handle */}
+            {selectionMode ? (
+              <div className="mt-2 p-1">
+                <Checkbox 
+                  checked={isSelected}
+                  onCheckedChange={(checked) => onSelect?.(material.id, !!checked)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+            ) : (
+              <button
+                {...attributes}
+                {...listeners}
+                className="mt-2 cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors"
+                title="拖拽排序"
+              >
+                <GripVertical className="h-5 w-5 text-muted-foreground" />
+              </button>
+            )}
 
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
               {getFileIcon(material.file_type)}
