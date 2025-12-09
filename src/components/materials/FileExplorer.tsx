@@ -881,11 +881,36 @@ export function FileExplorer({
 
   // Custom collision detection: prioritize specific folder targets, then fall back to area zones
   const customCollisionDetection: CollisionDetection = useCallback((args) => {
-    // Get all collisions using rectIntersection (more accurate for overlapping elements)
+    // Get all droppable containers for debugging
+    const containers = args.droppableContainers;
+    
+    // Log all registered droppables (only once per drag)
+    if (!(window as any)._dndDebugLogged) {
+      console.log("All registered droppables:", containers.map(c => ({ id: c.id, data: c.data?.current })));
+      (window as any)._dndDebugLogged = true;
+    }
+    
+    // Get all collisions using different methods
     const rectCollisions = rectIntersection(args);
     const pointerCollisions = pointerWithin(args);
+    const closestCollisions = closestCenter(args);
     
-    // Combine both for better detection
+    console.log("Collisions - rect:", rectCollisions.map(c => c.id), 
+                "pointer:", pointerCollisions.map(c => c.id),
+                "closest:", closestCollisions.map(c => c.id));
+    
+    // Check if sidebar root is in any collision list
+    const hasSidebarRoot = [...rectCollisions, ...pointerCollisions, ...closestCollisions]
+      .some(c => c.id === "folder-root-sidebar");
+    
+    if (hasSidebarRoot) {
+      console.log("✓ Sidebar root detected!");
+      const collision = [...rectCollisions, ...pointerCollisions, ...closestCollisions]
+        .find(c => c.id === "folder-root-sidebar");
+      return collision ? [collision] : [];
+    }
+    
+    // Combine rect and pointer collisions
     const allCollisions = [...rectCollisions];
     pointerCollisions.forEach(pc => {
       if (!allCollisions.find(c => c.id === pc.id)) {
@@ -894,8 +919,7 @@ export function FileExplorer({
     });
     
     if (allCollisions.length === 0) {
-      // Fallback to closestCenter if no direct collisions
-      return closestCenter(args);
+      return closestCollisions;
     }
     
     // Priority 1: Specific folder cards (not the area zones)
@@ -907,26 +931,15 @@ export function FileExplorer({
     });
     
     if (folderCardCollision) {
-      console.log("Target: folder card", folderCardCollision.id);
       return [folderCardCollision];
     }
     
-    // Priority 2: Sidebar root zone (for moving to actual root)
-    const sidebarRootCollision = allCollisions.find(c => c.id === "folder-root-sidebar");
-    if (sidebarRootCollision) {
-      console.log("Target: sidebar root");
-      return [sidebarRootCollision];
-    }
-    
-    // Priority 3: Content area (for moving to current directory)
+    // Priority 2: Content area (for moving to current directory)
     const contentAreaCollision = allCollisions.find(c => c.id === "content-area-current");
     if (contentAreaCollision) {
-      console.log("Target: content area (current directory)");
       return [contentAreaCollision];
     }
     
-    // Fallback to first collision
-    console.log("Target: fallback", allCollisions[0]?.id);
     return [allCollisions[0]];
   }, []);
 
