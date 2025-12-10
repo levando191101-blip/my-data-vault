@@ -8,9 +8,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { BookOpen, Sparkles } from 'lucide-react';
+import { z } from 'zod';
+
+// Validation schemas
+const signInSchema = z.object({
+  email: z.string().trim().email('请输入有效的邮箱地址'),
+  password: z.string().min(1, '请输入密码'),
+});
+
+const signUpSchema = z.object({
+  email: z.string().trim().email('请输入有效的邮箱地址'),
+  password: z.string()
+    .min(8, '密码至少需要8个字符')
+    .regex(/[A-Z]/, '密码需要包含至少一个大写字母')
+    .regex(/[0-9]/, '密码需要包含至少一个数字'),
+  displayName: z.string().max(50, '昵称最长50个字符').optional().or(z.literal('')),
+});
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
+  const [signInErrors, setSignInErrors] = useState<{ email?: string; password?: string }>({});
+  const [signUpErrors, setSignUpErrors] = useState<{ email?: string; password?: string; displayName?: string }>({});
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -23,13 +41,27 @@ export default function Auth() {
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setSignInErrors({});
     setIsLoading(true);
     
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
-    const { error } = await signIn(email, password);
+    // Validate input
+    const result = signInSchema.safeParse({ email, password });
+    if (!result.success) {
+      const fieldErrors: { email?: string; password?: string } = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0] === 'email') fieldErrors.email = err.message;
+        if (err.path[0] === 'password') fieldErrors.password = err.message;
+      });
+      setSignInErrors(fieldErrors);
+      setIsLoading(false);
+      return;
+    }
+
+    const { error } = await signIn(result.data.email, result.data.password);
     
     if (error) {
       toast({
@@ -52,6 +84,7 @@ export default function Auth() {
 
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setSignUpErrors({});
     setIsLoading(true);
     
     const formData = new FormData(e.currentTarget);
@@ -59,17 +92,21 @@ export default function Auth() {
     const password = formData.get('password') as string;
     const displayName = formData.get('displayName') as string;
 
-    if (password.length < 6) {
-      toast({
-        variant: 'destructive',
-        title: '注册失败',
-        description: '密码至少需要6个字符',
+    // Validate input
+    const result = signUpSchema.safeParse({ email, password, displayName });
+    if (!result.success) {
+      const fieldErrors: { email?: string; password?: string; displayName?: string } = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0] === 'email') fieldErrors.email = err.message;
+        if (err.path[0] === 'password') fieldErrors.password = err.message;
+        if (err.path[0] === 'displayName') fieldErrors.displayName = err.message;
       });
+      setSignUpErrors(fieldErrors);
       setIsLoading(false);
       return;
     }
 
-    const { error } = await signUp(email, password, displayName);
+    const { error } = await signUp(result.data.email, result.data.password, result.data.displayName || '');
     
     if (error) {
       let message = error.message;
@@ -131,7 +168,11 @@ export default function Auth() {
                       type="email"
                       placeholder="your@email.com"
                       required
+                      className={signInErrors.email ? 'border-destructive' : ''}
                     />
+                    {signInErrors.email && (
+                      <p className="text-sm text-destructive">{signInErrors.email}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signin-password">密码</Label>
@@ -141,7 +182,11 @@ export default function Auth() {
                       type="password"
                       placeholder="••••••••"
                       required
+                      className={signInErrors.password ? 'border-destructive' : ''}
                     />
+                    {signInErrors.password && (
+                      <p className="text-sm text-destructive">{signInErrors.password}</p>
+                    )}
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? '登录中...' : '登录'}
@@ -158,7 +203,11 @@ export default function Auth() {
                       name="displayName"
                       type="text"
                       placeholder="你的昵称"
+                      className={signUpErrors.displayName ? 'border-destructive' : ''}
                     />
+                    {signUpErrors.displayName && (
+                      <p className="text-sm text-destructive">{signUpErrors.displayName}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">邮箱</Label>
@@ -168,7 +217,11 @@ export default function Auth() {
                       type="email"
                       placeholder="your@email.com"
                       required
+                      className={signUpErrors.email ? 'border-destructive' : ''}
                     />
+                    {signUpErrors.email && (
+                      <p className="text-sm text-destructive">{signUpErrors.email}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-password">密码</Label>
@@ -176,10 +229,13 @@ export default function Auth() {
                       id="signup-password"
                       name="password"
                       type="password"
-                      placeholder="至少6个字符"
+                      placeholder="至少8位，含大写字母和数字"
                       required
-                      minLength={6}
+                      className={signUpErrors.password ? 'border-destructive' : ''}
                     />
+                    {signUpErrors.password && (
+                      <p className="text-sm text-destructive">{signUpErrors.password}</p>
+                    )}
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? '注册中...' : '注册'}
