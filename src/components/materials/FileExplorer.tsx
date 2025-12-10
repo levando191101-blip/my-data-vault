@@ -77,6 +77,7 @@ import {
   Copy,
   FolderSymlink,
   Lasso,
+  Tags,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -100,6 +101,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { useLassoSelection } from "@/hooks/useLassoSelection";
+import { BatchTagsDialog } from "./BatchTagsDialog";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface FileExplorerProps {
   materials: Material[];
@@ -825,6 +828,7 @@ export function FileExplorer({
   const { toast } = useToast();
   const { user } = useAuth();
   const { createCategory, updateCategory, deleteCategory } = useCategories();
+  const queryClient = useQueryClient();
   
   const [layoutMode, setLayoutMode] = useState<"dual" | "single">("dual");
   const [showSidebar, setShowSidebar] = useState(true);
@@ -849,6 +853,9 @@ export function FileExplorer({
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [parentCategory, setParentCategory] = useState<Category | null>(null);
   const [categoryName, setCategoryName] = useState("");
+  
+  // Batch tags dialog
+  const [batchTagsDialogOpen, setBatchTagsDialogOpen] = useState(false);
 
   // Lasso selection
   const contentAreaRef = useRef<HTMLDivElement>(null);
@@ -1262,6 +1269,73 @@ export function FileExplorer({
           }, 100);
         });
       }
+    }
+  };
+
+  // Batch tags edit handler
+  const handleBatchTagsEdit = async (
+    materialIds: string[], 
+    tagIds: string[], 
+    mode: 'add' | 'remove' | 'replace'
+  ) => {
+    setIsSaving(true);
+    try {
+      for (const materialId of materialIds) {
+        if (mode === 'replace') {
+          // Delete all existing tags first
+          await supabase
+            .from("material_tags")
+            .delete()
+            .eq("material_id", materialId);
+          
+          // Add new tags if any
+          if (tagIds.length > 0) {
+            const tagInserts = tagIds.map(tagId => ({
+              material_id: materialId,
+              tag_id: tagId
+            }));
+            await supabase.from("material_tags").insert(tagInserts);
+          }
+        } else if (mode === 'add') {
+          // Get existing tags
+          const { data: existingTags } = await supabase
+            .from("material_tags")
+            .select("tag_id")
+            .eq("material_id", materialId);
+          
+          const existingTagIds = new Set((existingTags || []).map((t: any) => t.tag_id));
+          const newTagIds = tagIds.filter(id => !existingTagIds.has(id));
+          
+          if (newTagIds.length > 0) {
+            const tagInserts = newTagIds.map(tagId => ({
+              material_id: materialId,
+              tag_id: tagId
+            }));
+            await supabase.from("material_tags").insert(tagInserts);
+          }
+        } else if (mode === 'remove') {
+          // Remove specified tags
+          for (const tagId of tagIds) {
+            await supabase
+              .from("material_tags")
+              .delete()
+              .eq("material_id", materialId)
+              .eq("tag_id", tagId);
+          }
+        }
+      }
+      
+      // Invalidate materials cache to refresh
+      queryClient.invalidateQueries({ queryKey: ["materials"] });
+      
+      const modeText = mode === 'add' ? '添加' : mode === 'remove' ? '移除' : '替换';
+      toast({ title: `已${modeText}标签（${materialIds.length} 个文件）` });
+      setSelectedMaterials(new Set());
+      setSelectionMode(false);
+    } catch (error) {
+      toast({ title: "编辑标签失败", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -1840,6 +1914,14 @@ export function FileExplorer({
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => setBatchTagsDialogOpen(true)}
+                      >
+                        <Tags className="h-4 w-4 mr-1" />
+                        编辑标签
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={handleBatchDownload}
                       >
                         <Download className="h-4 w-4 mr-1" />
@@ -1999,6 +2081,14 @@ export function FileExplorer({
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Batch Tags Dialog */}
+      <BatchTagsDialog
+        open={batchTagsDialogOpen}
+        onOpenChange={setBatchTagsDialogOpen}
+        selectedMaterialIds={Array.from(selectedMaterials)}
+        onSave={handleBatchTagsEdit}
+      />
     </DndContext>
   );
 }
