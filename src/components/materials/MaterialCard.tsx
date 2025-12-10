@@ -10,6 +10,7 @@ import {
 import { FileText, Image, Video, File, MoreVertical, Download, Trash2, ExternalLink, Pencil, Eye } from "lucide-react";
 import { Material } from "@/hooks/useMaterials";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface MaterialCardProps {
   material: Material;
@@ -41,35 +42,50 @@ const formatFileSize = (bytes: number) => {
 };
 
 export function MaterialCard({ material, onDelete, onEdit, onPreview }: MaterialCardProps) {
-  const handleDownload = (e?: React.MouseEvent) => {
+  const { toast } = useToast();
+
+  const handleDownload = async (e?: React.MouseEvent) => {
     e?.preventDefault();
     e?.stopPropagation();
-    const { data } = supabase.storage
+    
+    const { data, error } = await supabase.storage
       .from("materials")
-      .getPublicUrl(material.file_path);
+      .createSignedUrl(material.file_path, 3600); // 1 hour expiry
 
-    if (data?.publicUrl) {
-      setTimeout(() => {
-        const link = document.createElement("a");
-        link.href = data.publicUrl;
-        link.download = material.file_name;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }, 0);
+    if (error || !data?.signedUrl) {
+      toast({
+        title: "获取下载链接失败",
+        description: error?.message || "请稍后重试",
+        variant: "destructive",
+      });
+      return;
     }
+
+    const link = document.createElement("a");
+    link.href = data.signedUrl;
+    link.download = material.file_name;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
-  const handleOpen = () => {
-    const { data } = supabase.storage
+  const handleOpen = async () => {
+    const { data, error } = await supabase.storage
       .from("materials")
-      .getPublicUrl(material.file_path);
+      .createSignedUrl(material.file_path, 3600);
 
-    if (data?.publicUrl) {
-      window.open(data.publicUrl, "_blank", "noopener,noreferrer");
+    if (error || !data?.signedUrl) {
+      toast({
+        title: "获取链接失败",
+        description: error?.message || "请稍后重试",
+        variant: "destructive",
+      });
+      return;
     }
+
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   };
 
   return (

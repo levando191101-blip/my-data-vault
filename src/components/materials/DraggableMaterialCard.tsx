@@ -142,32 +142,36 @@ export function DraggableMaterialCard({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const handleDownload = () => {
-    const { data } = supabase.storage
+  const handleDownload = async () => {
+    const { data, error } = await supabase.storage
       .from("materials")
-      .getPublicUrl(material.file_path);
+      .createSignedUrl(material.file_path, 3600); // 1 hour expiry
 
-    if (data?.publicUrl) {
-      // Create a temporary link for download
-      const link = document.createElement("a");
-      link.href = data.publicUrl;
-      link.download = material.file_name;
-      link.style.display = "none";
-      document.body.appendChild(link);
-      link.click();
-      // Clean up after a short delay
-      setTimeout(() => document.body.removeChild(link), 100);
+    if (error || !data?.signedUrl) {
+      console.error("Failed to get signed URL:", error);
+      return;
     }
+
+    const link = document.createElement("a");
+    link.href = data.signedUrl;
+    link.download = material.file_name;
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => document.body.removeChild(link), 100);
   };
 
-  const handleOpen = () => {
-    const { data } = supabase.storage
+  const handleOpen = async () => {
+    const { data, error } = await supabase.storage
       .from("materials")
-      .getPublicUrl(material.file_path);
+      .createSignedUrl(material.file_path, 3600);
 
-    if (data?.publicUrl) {
-      window.open(data.publicUrl, "_blank", "noopener,noreferrer");
+    if (error || !data?.signedUrl) {
+      console.error("Failed to get signed URL:", error);
+      return;
     }
+
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   };
 
   const handleStartEdit = () => {
