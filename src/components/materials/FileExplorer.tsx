@@ -1253,22 +1253,28 @@ export function FileExplorer({
     
     const materialsToDownload = materials.filter(m => selectedMaterials.has(m.id));
     for (const material of materialsToDownload) {
-      const { data } = supabase.storage.from("materials").getPublicUrl(material.file_path);
-      if (data?.publicUrl) {
-        await new Promise<void>(resolve => {
-          setTimeout(() => {
-            const link = document.createElement("a");
-            link.href = data.publicUrl;
-            link.download = material.file_name;
-            link.target = "_blank";
-            link.rel = "noopener noreferrer";
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            resolve();
-          }, 100);
-        });
+      const { data, error } = await supabase.storage
+        .from("materials")
+        .createSignedUrl(material.file_path, 3600); // 1 hour expiry
+      
+      if (error || !data?.signedUrl) {
+        console.error("Failed to get signed URL for:", material.file_name, error);
+        continue;
       }
+      
+      await new Promise<void>(resolve => {
+        setTimeout(() => {
+          const link = document.createElement("a");
+          link.href = data.signedUrl;
+          link.download = material.file_name;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          resolve();
+        }, 100);
+      });
     }
   };
 
