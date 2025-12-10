@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -20,159 +20,172 @@ export interface Material {
   tags?: { id: string; name: string; color: string }[];
 }
 
+const fetchMaterialsData = async (userId: string): Promise<Material[]> => {
+  // Fetch materials
+  const { data: materialsData, error: materialsError } = await supabase
+    .from("materials")
+    .select("*")
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: false });
+
+  if (materialsError) {
+    throw new Error(materialsError.message);
+  }
+
+  // Fetch material tags
+  const { data: materialTagsData } = await supabase
+    .from("material_tags" as any)
+    .select("material_id, tag_id");
+
+  // Fetch all tags
+  const { data: tagsData } = await supabase
+    .from("tags" as any)
+    .select("id, name, color");
+
+  const tagsMap = new Map((tagsData as any[] || []).map((tag: any) => [tag.id, tag]));
+
+  // Map tags to materials
+  const materialsWithTags = (materialsData || []).map((material) => {
+    const materialTags = (materialTagsData as any[] || [])
+      .filter((mt: any) => mt.material_id === material.id)
+      .map((mt: any) => tagsMap.get(mt.tag_id))
+      .filter(Boolean);
+
+    return {
+      ...material,
+      tags: materialTags,
+    };
+  });
+
+  return materialsWithTags;
+};
+
 export function useMaterials() {
-  const [materials, setMaterials] = useState<Material[]>([]);
-  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const fetchMaterials = async () => {
-    if (!user) return;
+  const { data: materials = [], isLoading: loading, refetch } = useQuery({
+    queryKey: ["materials", user?.id],
+    queryFn: () => fetchMaterialsData(user!.id),
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes (formerly cacheTime)
+  });
 
-    // Only show loading on initial fetch (when no data exists)
-    if (materials.length === 0) {
-      setLoading(true);
-    }
-    
-    // Fetch materials
-    const { data: materialsData, error: materialsError } = await supabase
-      .from("materials")
-      .select("*")
-      .order("sort_order", { ascending: true })
-      .order("created_at", { ascending: false });
+  const deleteMutation = useMutation({
+    mutationFn: async ({ id, filePath }: { id: string; filePath: string }) => {
+      // Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from("materials")
+        .remove([filePath]);
 
-    if (materialsError) {
+      if (storageError) {
+        throw new Error(storageError.message);
+      }
+
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from("materials")
+        .delete()
+        .eq("id", id);
+
+      if (dbError) {
+        throw new Error(dbError.message);
+      }
+    },
+    onSuccess: () => {
+      toast({ title: "资料已删除" });
+      queryClient.invalidateQueries({ queryKey: ["materials"] });
+    },
+    onError: (error: Error) => {
       toast({
-        title: "获取资料失败",
-        description: materialsError.message,
+        title: "删除失败",
+        description: error.message,
         variant: "destructive",
       });
-      setLoading(false);
-      return;
-    }
+    },
+  });
 
-    // Fetch material tags
-    const { data: materialTagsData } = await supabase
-      .from("material_tags" as any)
-      .select("material_id, tag_id");
+  const updateMutation = useMutation({
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: { title: string; categoryId: string | null; tagIds: string[] };
+    }) => {
+      // Update material info
+      const { error: updateError } = await supabase
+        .from("materials")
+        .update({
+          title: data.title,
+          category_id: data.categoryId,
+        })
+        .eq("id", id);
 
-    // Fetch all tags
-    const { data: tagsData } = await supabase
-      .from("tags" as any)
-      .select("id, name, color");
+      if (updateError) {
+        throw new Error(updateError.message);
+      }
 
-    const tagsMap = new Map((tagsData as any[] || []).map((tag: any) => [tag.id, tag]));
+      // Delete existing tags
+      await supabase.from("material_tags").delete().eq("material_id", id);
 
-    // Map tags to materials
-    const materialsWithTags = (materialsData || []).map((material) => {
-      const materialTags = (materialTagsData as any[] || [])
-        .filter((mt: any) => mt.material_id === material.id)
-        .map((mt: any) => tagsMap.get(mt.tag_id))
-        .filter(Boolean);
+      // Insert new tags
+      if (data.tagIds.length > 0) {
+        const tagInserts = data.tagIds.map((tagId) => ({
+          material_id: id,
+          tag_id: tagId,
+        }));
 
-      return {
-        ...material,
-        tags: materialTags,
-      };
-    });
+        const { error: tagsError } = await supabase
+          .from("material_tags")
+          .insert(tagInserts);
 
-    setMaterials(materialsWithTags);
-    setLoading(false);
-  };
+        if (tagsError) {
+          console.error("Failed to update tags:", tagsError);
+        }
+      }
+    },
+    onSuccess: () => {
+      toast({ title: "资料已更新" });
+      queryClient.invalidateQueries({ queryKey: ["materials"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "更新失败",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const deleteMaterial = async (id: string, filePath: string) => {
-    // Delete from storage
-    const { error: storageError } = await supabase.storage
-      .from("materials")
-      .remove([filePath]);
-
-    if (storageError) {
-      toast({
-        title: "删除文件失败",
-        description: storageError.message,
-        variant: "destructive",
-      });
+    try {
+      await deleteMutation.mutateAsync({ id, filePath });
+      return true;
+    } catch {
       return false;
     }
-
-    // Delete from database
-    const { error: dbError } = await supabase
-      .from("materials")
-      .delete()
-      .eq("id", id);
-
-    if (dbError) {
-      toast({
-        title: "删除记录失败",
-        description: dbError.message,
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    toast({ title: "资料已删除" });
-    await fetchMaterials();
-    return true;
   };
 
   const updateMaterial = async (
-    id: string, 
+    id: string,
     data: { title: string; categoryId: string | null; tagIds: string[] }
   ) => {
-    // Update material info
-    const { error: updateError } = await supabase
-      .from("materials")
-      .update({
-        title: data.title,
-        category_id: data.categoryId
-      })
-      .eq("id", id);
-
-    if (updateError) {
-      toast({
-        title: "更新失败",
-        description: updateError.message,
-        variant: "destructive",
-      });
+    try {
+      await updateMutation.mutateAsync({ id, data });
+      return true;
+    } catch {
       return false;
     }
-
-    // Delete existing tags
-    await supabase
-      .from("material_tags")
-      .delete()
-      .eq("material_id", id);
-
-    // Insert new tags
-    if (data.tagIds.length > 0) {
-      const tagInserts = data.tagIds.map(tagId => ({
-        material_id: id,
-        tag_id: tagId
-      }));
-
-      const { error: tagsError } = await supabase
-        .from("material_tags")
-        .insert(tagInserts);
-
-      if (tagsError) {
-        console.error("Failed to update tags:", tagsError);
-      }
-    }
-
-    toast({ title: "资料已更新" });
-    await fetchMaterials();
-    return true;
   };
-
-  useEffect(() => {
-    fetchMaterials();
-  }, [user?.id]);
 
   return {
     materials,
     loading,
     deleteMaterial,
     updateMaterial,
-    refetch: fetchMaterials,
+    refetch,
   };
 }
