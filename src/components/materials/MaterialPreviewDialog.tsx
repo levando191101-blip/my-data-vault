@@ -10,6 +10,56 @@ import { Download, Loader2 } from "lucide-react";
 import { Material } from "@/hooks/useMaterials";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import ReactPlayer from "react-player";
+import ReactMarkdown from "react-markdown";
+import rehypeHighlight from "rehype-highlight";
+import "prismjs/themes/prism-tomorrow.css";
+
+// Helper component for Markdown and Code preview
+function MarkdownOrCodePreview({ url, isMarkdown, fileName }: { url: string; isMarkdown: boolean; fileName: string }) {
+  const [content, setContent] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(url)
+      .then((res) => res.text())
+      .then((text) => {
+        setContent(text);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch content:", err);
+        setLoading(false);
+      });
+  }, [url]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 bg-muted/30 rounded-lg max-h-[70vh] overflow-auto">
+      {isMarkdown ? (
+        <div className="prose dark:prose-invert max-w-none">
+          <ReactMarkdown rehypePlugins={[rehypeHighlight]}>
+            {content}
+          </ReactMarkdown>
+        </div>
+      ) : (
+        <div>
+          <div className="text-sm text-muted-foreground mb-2 font-mono">{fileName}</div>
+          <pre className="language-javascript overflow-x-auto">
+            <code>{content}</code>
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface MaterialPreviewDialogProps {
   material: Material | null;
@@ -69,7 +119,11 @@ export function MaterialPreviewDialog({
 
   const isImage = material.file_type === "image";
   const isPdf = material.file_type === "pdf" || material.mime_type === "application/pdf";
-  const canPreview = isImage || isPdf;
+  const isVideo = material.file_type === "video" || material.mime_type?.startsWith("video/");
+  const isAudio = material.file_type === "audio" || material.mime_type?.startsWith("audio/");
+  const isMarkdown = material.file_name.endsWith(".md") || material.file_name.endsWith(".markdown");
+  const isCode = /\.(js|jsx|ts|tsx|py|java|cpp|c|h|css|html|json|xml|yaml|yml|sh|bash)$/i.test(material.file_name);
+  const canPreview = isImage || isPdf || isVideo || isAudio || isMarkdown || isCode;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -109,6 +163,34 @@ export function MaterialPreviewDialog({
                   src={signedUrl}
                   className="w-full h-[70vh] rounded-lg border"
                   title={material.title}
+                />
+              )}
+              {isVideo && (
+                <div className="flex items-center justify-center h-full bg-black rounded-lg">
+                  <ReactPlayer
+                    url={signedUrl}
+                    controls
+                    width="100%"
+                    height="auto"
+                    style={{ maxHeight: "70vh" }}
+                  />
+                </div>
+              )}
+              {isAudio && (
+                <div className="flex items-center justify-center h-64">
+                  <ReactPlayer
+                    url={signedUrl}
+                    controls
+                    width="100%"
+                    height="80px"
+                  />
+                </div>
+              )}
+              {(isMarkdown || isCode) && (
+                <MarkdownOrCodePreview
+                  url={signedUrl}
+                  isMarkdown={isMarkdown}
+                  fileName={material.file_name}
                 />
               )}
             </>

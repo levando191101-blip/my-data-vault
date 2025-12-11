@@ -17,14 +17,16 @@ export interface Material {
   sort_order: number;
   created_at: string;
   updated_at: string;
+  deleted_at: string | null;
   tags?: { id: string; name: string; color: string }[];
 }
 
 const fetchMaterialsData = async (userId: string): Promise<Material[]> => {
-  // Fetch materials
+  // Fetch materials (exclude deleted ones)
   const { data: materialsData, error: materialsError } = await supabase
     .from("materials")
     .select("*")
+    .is("deleted_at", null)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false });
 
@@ -75,19 +77,10 @@ export function useMaterials() {
 
   const deleteMutation = useMutation({
     mutationFn: async ({ id, filePath }: { id: string; filePath: string }) => {
-      // Delete from storage
-      const { error: storageError } = await supabase.storage
-        .from("materials")
-        .remove([filePath]);
-
-      if (storageError) {
-        throw new Error(storageError.message);
-      }
-
-      // Delete from database
+      // Soft delete: set deleted_at timestamp
       const { error: dbError } = await supabase
         .from("materials")
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq("id", id);
 
       if (dbError) {
@@ -95,8 +88,12 @@ export function useMaterials() {
       }
     },
     onSuccess: () => {
-      toast({ title: "资料已删除" });
+      toast({ 
+        title: "已移至回收站",
+        description: "文件可在回收站中恢复"
+      });
       queryClient.invalidateQueries({ queryKey: ["materials"] });
+      queryClient.invalidateQueries({ queryKey: ["trashed-materials"] });
     },
     onError: (error: Error) => {
       toast({

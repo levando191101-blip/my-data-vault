@@ -3,12 +3,24 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search as SearchIcon, X, ArrowUpDown, LayoutGrid, List } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Search as SearchIcon, X, ArrowUpDown, LayoutGrid, List, Filter, Clock, Trash2 } from 'lucide-react';
 import { useMaterials, Material } from '@/hooks/useMaterials';
 import { useTags } from '@/hooks/useTags';
+import { useBatchOperations } from '@/hooks/useBatchOperations';
 import { MaterialCard } from '@/components/materials/MaterialCard';
 import { MaterialEditDialog } from '@/components/materials/MaterialEditDialog';
 import { MaterialPreviewDialog } from '@/components/materials/MaterialPreviewDialog';
+import { BatchOperationToolbar } from '@/components/materials/BatchOperationToolbar';
+import { BatchMoveDialog } from '@/components/materials/BatchMoveDialog';
+import { BatchTagsDialog } from '@/components/materials/BatchTagsDialog';
+import { AdvancedSearchDialog, AdvancedSearchFilters } from '@/components/search/AdvancedSearchDialog';
+import { useSearchHistory } from '@/hooks/useSearchHistory';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -40,8 +52,20 @@ export default function Search() {
   const [deleteId, setDeleteId] = useState<{ id: string; filePath: string } | null>(null);
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
   const [previewMaterial, setPreviewMaterial] = useState<Material | null>(null);
-  const { materials, loading, deleteMaterial, updateMaterial } = useMaterials();
+  const { materials, loading, deleteMaterial, updateMaterial, refetch } = useMaterials();
   const { tags } = useTags();
+  const { batchDelete, batchMove, batchDownload, batchUpdateTags } = useBatchOperations();
+  const { history, addToHistory, removeFromHistory, clearHistory } = useSearchHistory();
+
+  // Batch operations state
+  const [selectedMaterialIds, setSelectedMaterialIds] = useState<string[]>([]);
+  const [batchMoveDialogOpen, setBatchMoveDialogOpen] = useState(false);
+  const [batchTagsDialogOpen, setBatchTagsDialogOpen] = useState(false);
+  const [batchDeleteDialogOpen, setBatchDeleteDialogOpen] = useState(false);
+
+  // Advanced search state
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedSearchFilters>({});
+  const [advancedSearchOpen, setAdvancedSearchOpen] = useState(false);
 
   // Sorting and view mode state with localStorage persistence
   const [sortField, setSortField] = useState<"name" | "size" | "date" | "type">(() => {
@@ -75,7 +99,7 @@ export default function Search() {
   const hasFilters = searchQuery.trim() !== '' || selectedTags.length > 0;
 
   const searchResults = useMemo(() => {
-    if (!hasFilters) return [];
+    if (!hasFilters && Object.keys(advancedFilters).length === 0) return [];
     
     let filtered = materials.filter(material => {
       // Text search filter
@@ -92,6 +116,44 @@ export default function Search() {
       if (selectedTags.length > 0) {
         const materialTagIds = material.tags?.map((t) => t.id) || [];
         if (!selectedTags.every((tagId) => materialTagIds.includes(tagId))) {
+          return false;
+        }
+      }
+
+      // Advanced filters
+      if (advancedFilters.minSize && material.file_size < advancedFilters.minSize) {
+        return false;
+      }
+      if (advancedFilters.maxSize && material.file_size > advancedFilters.maxSize) {
+        return false;
+      }
+      if (advancedFilters.dateFrom) {
+        const materialDate = new Date(material.created_at);
+        if (materialDate < advancedFilters.dateFrom) {
+          return false;
+        }
+      }
+      if (advancedFilters.dateTo) {
+        const materialDate = new Date(material.created_at);
+        const endDate = new Date(advancedFilters.dateTo);
+        endDate.setHours(23, 59, 59, 999); // End of day
+        if (materialDate > endDate) {
+          return false;
+        }
+      }
+      if (advancedFilters.fileTypes && advancedFilters.fileTypes.length > 0) {
+        if (!advancedFilters.fileTypes.includes(material.file_type)) {
+          return false;
+        }
+      }
+      if (advancedFilters.categoryId) {
+        if (material.category_id !== advancedFilters.categoryId) {
+          return false;
+        }
+      }
+      if (advancedFilters.tagIds && advancedFilters.tagIds.length > 0) {
+        const materialTagIds = material.tags?.map((t) => t.id) || [];
+        if (!advancedFilters.tagIds.every((tagId) => materialTagIds.includes(tagId))) {
           return false;
         }
       }
@@ -122,7 +184,17 @@ export default function Search() {
     });
 
     return filtered;
-  }, [searchQuery, selectedTags, materials, hasFilters, sortField, sortOrder]);
+  }, [searchQuery, selectedTags, materials, hasFilters, sortField, sortOrder, advancedFilters]);
+
+  // Check if there are any active filters
+  const hasActiveFilters = hasFilters || Object.keys(advancedFilters).length > 0;
+
+  // Add search to history when user starts searching
+  useEffect(() => {
+    if (searchQuery.trim() && hasFilters) {
+      addToHistory(searchQuery);
+    }
+  }, [searchQuery, hasFilters, addToHistory]);
 
   const handleDelete = async () => {
     if (deleteId) {
@@ -136,22 +208,166 @@ export default function Search() {
     setSelectedTags([]);
   };
 
+  // Batch operations handlers
+  const toggleMaterialSelection = (materialId: string) => {
+    setSelectedMaterialIds(prev =>
+      prev.includes(materialId)
+        ? prev.filter(id => id !== materialId)
+        : [...prev, materialId]
+    );
+  };
+
+  const selectAll = () => {
+    setSelectedMaterialIds(searchResults.map(m => m.id));
+  };
+
+  const deselectAll = () => {
+    setSelectedMaterialIds([]);
+  };
+
+  const handleBatchDelete = async () => {
+    const materialsToDelete = searchResults.filter(m =>
+      selectedMaterialIds.includes(m.id)
+    );
+    const success = await batchDelete(materialsToDelete);
+    if (success) {
+      setSelectedMaterialIds([]);
+      setBatchDeleteDialogOpen(false);
+      refetch();
+    }
+  };
+
+  const handleBatchMove = async (categoryId: string | null) => {
+    const success = await batchMove(selectedMaterialIds, categoryId);
+    if (success) {
+      setSelectedMaterialIds([]);
+      refetch();
+    }
+  };
+
+  const handleBatchDownload = async () => {
+    const materialsToDownload = searchResults.filter(m =>
+      selectedMaterialIds.includes(m.id)
+    );
+    await batchDownload(materialsToDownload);
+  };
+
+  const handleBatchUpdateTags = async (
+    materialIds: string[],
+    tagIds: string[],
+    mode: 'add' | 'remove' | 'replace'
+  ) => {
+    const success = await batchUpdateTags(materialIds, tagIds, mode);
+    if (success) {
+      refetch();
+    }
+  };
+
   return (
     <div className="space-y-6">
+      <BatchOperationToolbar
+        selectedCount={selectedMaterialIds.length}
+        totalCount={searchResults.length}
+        onSelectAll={selectAll}
+        onDeselectAll={deselectAll}
+        onBatchDelete={() => setBatchDeleteDialogOpen(true)}
+        onBatchMove={() => setBatchMoveDialogOpen(true)}
+        onBatchDownload={handleBatchDownload}
+        onBatchTags={() => setBatchTagsDialogOpen(true)}
+        isAllSelected={selectedMaterialIds.length === searchResults.length && searchResults.length > 0}
+      />
+
       <div>
         <h1 className="text-3xl font-bold">搜索</h1>
         <p className="text-muted-foreground mt-1">快速找到你需要的学习资料</p>
       </div>
 
       <div className="space-y-4">
-        <div className="relative">
-          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-          <Input 
-            placeholder="搜索资料标题、文件名、标签..." 
-            className="pl-10 h-12 text-lg"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <div className="relative flex gap-2">
+          <div className="relative flex-1">
+            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input 
+              placeholder="搜索资料标题、文件名、标签..." 
+              className="pl-10 pr-10 h-12 text-lg"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {/* Search History Popover */}
+            {history.length > 0 && !searchQuery && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                  >
+                    <Clock className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80" align="start">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium text-sm">搜索历史</h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearHistory}
+                        className="h-auto p-1 text-xs"
+                      >
+                        清空
+                      </Button>
+                    </div>
+                    <div className="space-y-1">
+                      {history.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between group hover:bg-muted/50 rounded px-2 py-1.5"
+                        >
+                          <button
+                            className="flex-1 text-left text-sm truncate"
+                            onClick={() => setSearchQuery(item.query)}
+                          >
+                            {item.query}
+                          </button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="opacity-0 group-hover:opacity-100 h-auto w-auto p-1"
+                            onClick={() => removeFromHistory(item.id)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-12 w-12 shrink-0"
+                  onClick={() => setAdvancedSearchOpen(true)}
+                >
+                  <Filter className={cn(
+                    "h-5 w-5",
+                    Object.keys(advancedFilters).length > 0 && "text-primary"
+                  )} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                高级搜索
+                {Object.keys(advancedFilters).length > 0 && (
+                  <span className="ml-1">({Object.keys(advancedFilters).length})</span>
+                )}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
 
         {tags.length > 0 && (
@@ -271,7 +487,7 @@ export default function Search() {
             <p className="text-muted-foreground">加载中...</p>
           </CardContent>
         </Card>
-      ) : !hasFilters ? (
+      ) : !hasActiveFilters ? (
         <Card className="border-2">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-muted mb-4">
@@ -306,13 +522,19 @@ export default function Search() {
               : "space-y-2"
           )}>
             {searchResults.map((material) => (
-              <MaterialCard
-                key={material.id}
-                material={material}
-                onDelete={(id, filePath) => setDeleteId({ id, filePath })}
-                onEdit={setEditingMaterial}
-                onPreview={setPreviewMaterial}
-              />
+              <div key={material.id} className="relative group">
+                <Checkbox
+                  className="absolute top-3 left-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity data-[state=checked]:opacity-100 bg-background border-2"
+                  checked={selectedMaterialIds.includes(material.id)}
+                  onCheckedChange={() => toggleMaterialSelection(material.id)}
+                />
+                <MaterialCard
+                  material={material}
+                  onDelete={(id, filePath) => setDeleteId({ id, filePath })}
+                  onEdit={setEditingMaterial}
+                  onPreview={setPreviewMaterial}
+                />
+              </div>
             ))}
           </div>
         </div>
@@ -345,6 +567,44 @@ export default function Search() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={batchDeleteDialogOpen} onOpenChange={setBatchDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认批量删除</AlertDialogTitle>
+            <AlertDialogDescription>
+              确定要删除选中的 {selectedMaterialIds.length} 个资料吗？此操作无法撤销。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBatchDelete} className="bg-destructive">
+              删除全部
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <BatchMoveDialog
+        open={batchMoveDialogOpen}
+        onOpenChange={setBatchMoveDialogOpen}
+        selectedCount={selectedMaterialIds.length}
+        onSave={handleBatchMove}
+      />
+
+      <BatchTagsDialog
+        open={batchTagsDialogOpen}
+        onOpenChange={setBatchTagsDialogOpen}
+        selectedMaterialIds={selectedMaterialIds}
+        onSave={handleBatchUpdateTags}
+      />
+
+      <AdvancedSearchDialog
+        open={advancedSearchOpen}
+        onOpenChange={setAdvancedSearchOpen}
+        filters={advancedFilters}
+        onApply={setAdvancedFilters}
+      />
     </div>
   );
 }

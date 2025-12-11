@@ -1,12 +1,16 @@
 import { ReactNode } from 'react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
+import { useGlobalShortcuts } from '@/hooks/useKeyboardShortcuts';
 
 interface DashboardLayoutProps {
   children: ReactNode;
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
+  // Enable global keyboard shortcuts
+  useGlobalShortcuts();
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">

@@ -1,4 +1,4 @@
-import { Home, Upload, FolderOpen, Search, Settings, LogOut, BookOpen, Sun, Moon } from 'lucide-react';
+import { Home, Upload, FolderOpen, Search, Settings, LogOut, BookOpen, Sun, Moon, Trash2 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from 'next-themes';
@@ -23,6 +23,7 @@ const mainNavItems = [
   { title: '上传', url: '/upload', icon: Upload },
   { title: '我的资料', url: '/materials', icon: FolderOpen },
   { title: '搜索', url: '/search', icon: Search },
+  { title: '回收站', url: '/trash', icon: Trash2 },
 ];
 
 const settingsItems = [

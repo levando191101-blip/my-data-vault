@@ -1,14 +1,19 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { useMaterials } from '@/hooks/useMaterials';
+import { useDataExport } from '@/hooks/useDataExport';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { User, Mail, Palette, FolderTree, Tags } from 'lucide-react';
+import { User, Mail, Palette, FolderTree, Tags, Download, FileJson, FileSpreadsheet, Archive } from 'lucide-react';
 import { CategoryManager } from '@/components/categories/CategoryManager';
 import { TagManager } from '@/components/tags/TagManager';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function Settings() {
   const { user } = useAuth();
+  const { materials } = useMaterials();
+  const { exporting, exportAsCSV, exportAsJSON, exportAllFiles } = useDataExport();
 
   return (
     <div className="space-y-6">
