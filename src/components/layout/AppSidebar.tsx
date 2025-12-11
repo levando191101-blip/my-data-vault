@@ -1,6 +1,7 @@
-import { Home, Upload, FolderOpen, Search, Settings, LogOut, BookOpen } from 'lucide-react';
+import { Home, Upload, FolderOpen, Search, Settings, LogOut, BookOpen, Sun, Moon } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from 'next-themes';
 import {
   Sidebar,
   SidebarContent,
@@ -15,6 +16,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const mainNavItems = [
   { title: '首页', url: '/', icon: Home },
@@ -29,6 +31,11 @@ const settingsItems = [
 
 export function AppSidebar() {
   const { user, signOut } = useAuth();
+  const { theme, setTheme, resolvedTheme } = useTheme();
+
+  const toggleTheme = () => {
+    setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
+  };
 
   const getInitials = () => {
     if (!user?.user_metadata?.display_name) {
@@ -44,10 +51,29 @@ export function AppSidebar() {
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sidebar-primary">
             <BookOpen className="h-5 w-5 text-sidebar-primary-foreground" />
           </div>
-          <div>
+          <div className="flex-1">
             <h2 className="font-semibold text-sidebar-foreground">学习资料</h2>
             <p className="text-xs text-sidebar-foreground/70">管理中心</p>
           </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleTheme}
+                className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
+              >
+                {resolvedTheme === 'dark' ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              {resolvedTheme === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
+            </TooltipContent>
+          </Tooltip>
         </div>
       </SidebarHeader>
 
