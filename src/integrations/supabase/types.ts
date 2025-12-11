@@ -89,6 +89,7 @@ export type Database = {
         Row: {
           category_id: string | null
           created_at: string
+          deleted_at: string | null
           description: string | null
           file_name: string
           file_path: string
@@ -104,6 +105,7 @@ export type Database = {
         Insert: {
           category_id?: string | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           file_name: string
           file_path: string
@@ -119,6 +121,7 @@ export type Database = {
         Update: {
           category_id?: string | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           file_name?: string
           file_path?: string
@@ -197,7 +200,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      auto_cleanup_trash: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
