@@ -755,9 +755,21 @@ export function FileExplorer({
   const [batchDragCount, setBatchDragCount] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   
-  // Sorting state
-  const [sortField, setSortField] = useState<"name" | "size" | "date" | "type">("date");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  // Sorting state with localStorage persistence
+  const [sortField, setSortField] = useState<"name" | "size" | "date" | "type">(() => {
+    const saved = localStorage.getItem("materials-sort-field");
+    return (saved as "name" | "size" | "date" | "type") || "date";
+  });
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(() => {
+    const saved = localStorage.getItem("materials-sort-order");
+    return (saved as "asc" | "desc") || "desc";
+  });
+  
+  // Save sorting preferences to localStorage
+  useEffect(() => {
+    localStorage.setItem("materials-sort-field", sortField);
+    localStorage.setItem("materials-sort-order", sortOrder);
+  }, [sortField, sortOrder]);
 
   // Batch selection states
   const [selectionMode, setSelectionMode] = useState(false);
