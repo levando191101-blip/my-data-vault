@@ -120,11 +120,11 @@
     @apply bg-background text-foreground;
   }
 
-  /* Ultra smooth theme transitions with View Transitions API support */
+  /* Optimized smooth theme transitions - no flicker */
   @supports (view-transition-name: none) {
     ::view-transition-old(root),
     ::view-transition-new(root) {
-      animation-duration: 0.5s;
+      animation-duration: 0.3s;
       animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
@@ -132,34 +132,41 @@
   /* Fallback for browsers without View Transitions */
   html {
     transition: 
-      color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-      background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  html *,
-  html *::before,
-  html *::after {
+  /* Selective transitions - avoid text flicker */
+  html *:not(input):not(textarea):not(select) {
     transition: 
-      color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-      background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-      border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-      box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-      fill 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-      stroke 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-      opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Smooth transition for SVG icons */
-  svg {
+  /* Text color transition - faster to reduce flicker */
+  html * {
+    transition: color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* SVG and icons - smooth transition */
+  svg, svg * {
     transition: 
-      fill 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-      stroke 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-      color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      fill 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      stroke 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Smooth transition for images and media */
+  /* Images and media - prevent flicker */
   img, video, iframe {
-    transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* GPU acceleration for smooth rendering */
+  html, body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transform: translateZ(0);
+    backface-visibility: hidden;
   }
 
   /* Prevent transition on page load */
