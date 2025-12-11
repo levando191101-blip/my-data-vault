@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { User, Mail, Palette, FolderTree, Tags } from 'lucide-react';
 import { CategoryManager } from '@/components/categories/CategoryManager';
 import { TagManager } from '@/components/tags/TagManager';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function Settings() {
   const { user } = useAuth();
@@ -85,8 +86,11 @@ export default function Settings() {
           </CardTitle>
           <CardDescription>自定义应用的外观主题</CardDescription>
         </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">主题切换功能即将推出...</p>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>主题模式</Label>
+            <ThemeToggle />
+          </div>
         </CardContent>
       </Card>
     </div>
