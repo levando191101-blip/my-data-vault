@@ -45,6 +45,17 @@
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 262 83% 50%;
     --sidebar-ring: 0 0% 100%;
+    
+    /* Glass morphism effects */
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.18);
+    
+    /* Shadow system */
+    --shadow-color: 0 0% 0%;
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+    --shadow-xl: 0 12px 40px rgba(0, 0, 0, 0.15);
   }
 
   .dark {
@@ -87,6 +98,16 @@
     --sidebar-accent-foreground: 0 0% 95%;
     --sidebar-border: 262 40% 25%;
     --sidebar-ring: 262 83% 65%;
+    
+    /* Glass morphism effects - dark mode */
+    --glass-bg: rgba(15, 23, 42, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    
+    /* Shadow system - dark mode */
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 12px 40px rgba(0, 0, 0, 0.6);
   }
 }
 
@@ -104,7 +125,102 @@
     transition: color 0.3s ease, background-color 0.3s ease;
   }
 
-  html * {
-    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  html *,
+  html *::before,
+  html *::after {
+    transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+}
+
+/* Modern Button Variants */
+@layer components {
+  .btn-primary-modern {
+    @apply relative overflow-hidden;
+    @apply bg-gradient-to-r from-primary via-secondary to-accent;
+    @apply text-white font-medium px-6 py-3 rounded-xl;
+    @apply shadow-lg hover:shadow-xl;
+    @apply transition-all duration-300;
+    @apply hover:scale-105 hover:-translate-y-0.5;
+  }
+  
+  .btn-primary-modern::before {
+    content: '';
+    @apply absolute inset-0;
+    @apply bg-gradient-to-r from-white/0 via-white/20 to-white/0;
+    @apply translate-x-[-200%];
+    @apply transition-transform duration-700;
+  }
+  
+  .btn-primary-modern:hover::before {
+    @apply translate-x-[200%];
+  }
+  
+  .btn-secondary-modern {
+    @apply relative backdrop-blur-md;
+    @apply bg-white/10 dark:bg-white/5;
+    @apply border border-white/20;
+    @apply text-foreground font-medium px-6 py-3 rounded-xl;
+    @apply shadow-md hover:shadow-lg;
+    @apply transition-all duration-300;
+    @apply hover:bg-white/20 hover:scale-105;
+  }
+  
+  .btn-icon-modern {
+    @apply relative p-2.5 rounded-xl;
+    @apply bg-gradient-to-br from-primary/10 to-secondary/10;
+    @apply border border-primary/20;
+    @apply hover:from-primary/20 hover:to-secondary/20;
+    @apply hover:border-primary/40;
+    @apply transition-all duration-300;
+    @apply hover:scale-110 hover:shadow-lg hover:shadow-primary/20;
+  }
+}
+
+/* Modern Card Variants */
+@layer components {
+  .card-modern {
+    @apply relative rounded-2xl;
+    @apply bg-card backdrop-blur-sm;
+    @apply border border-border/50;
+    @apply shadow-md hover:shadow-xl;
+    @apply transition-all duration-300;
+    @apply hover:-translate-y-1;
+  }
+  
+  .stat-card-modern {
+    @apply relative rounded-2xl p-6;
+    @apply bg-gradient-to-br from-card to-muted/30;
+    @apply border border-border/50;
+    @apply shadow-lg hover:shadow-2xl;
+    @apply transition-all duration-300;
+    @apply hover:-translate-y-2 hover:scale-[1.02];
+    @apply cursor-pointer overflow-hidden;
+  }
+  
+  .stat-card-icon {
+    @apply relative rounded-xl p-3;
+    @apply bg-gradient-to-br;
+    @apply shadow-lg;
+    @apply transition-all duration-300;
+    @apply group-hover:scale-110 group-hover:shadow-xl;
+  }
+}
+
+/* Glass Morphism Banner */
+@layer components {
+  .banner-glass {
+    @apply relative rounded-3xl p-8 overflow-hidden;
+    @apply backdrop-blur-xl;
+    @apply bg-gradient-to-br from-violet-600/90 via-cyan-600/90 to-emerald-600/90;
+    @apply dark:from-violet-700/90 dark:via-cyan-700/90 dark:to-emerald-700/90;
+    @apply border border-white/20;
+    @apply shadow-2xl;
+  }
+  
+  .banner-icon-glow {
+    @apply relative rounded-2xl p-4;
+    @apply bg-white/20 backdrop-blur-sm;
+    @apply border border-white/30;
+    @apply shadow-xl shadow-white/20;
   }
 }

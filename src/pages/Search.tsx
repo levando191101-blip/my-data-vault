@@ -190,7 +190,7 @@ export default function Search() {
               <TooltipProvider>
                 <div className="flex items-center gap-2">
                   <Select value={sortField} onValueChange={(value: typeof sortField) => setSortField(value)}>
-                    <SelectTrigger className="w-[140px] h-9">
+                    <SelectTrigger className="w-[140px] h-10 rounded-xl border-border/50 shadow-sm hover:shadow-md transition-all">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -206,7 +206,7 @@ export default function Search() {
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-9 w-9"
+                        className="h-10 w-10 rounded-xl border-border/50 shadow-sm hover:shadow-md hover:scale-105 transition-all"
                         onClick={() => setSortOrder(prev => prev === "asc" ? "desc" : "asc")}
                       >
                         <ArrowUpDown className={cn(
@@ -224,13 +224,16 @@ export default function Search() {
 
               {/* View Mode Toggle */}
               <TooltipProvider>
-                <div className="flex items-center gap-1 border rounded-md p-1">
+                <div className="flex items-center gap-1 border border-border/50 rounded-xl p-1 shadow-sm">
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         variant={viewMode === "grid" ? "secondary" : "ghost"}
                         size="icon"
-                        className="h-7 w-7"
+                        className={cn(
+                          "h-8 w-8 rounded-lg transition-all",
+                          viewMode === "grid" && "bg-gradient-to-br from-primary/10 to-secondary/10 text-primary shadow-sm"
+                        )}
                         onClick={() => setViewMode("grid")}
                       >
                         <LayoutGrid className="h-4 w-4" />
@@ -244,7 +247,10 @@ export default function Search() {
                       <Button
                         variant={viewMode === "list" ? "secondary" : "ghost"}
                         size="icon"
-                        className="h-7 w-7"
+                        className={cn(
+                          "h-8 w-8 rounded-lg transition-all",
+                          viewMode === "list" && "bg-gradient-to-br from-primary/10 to-secondary/10 text-primary shadow-sm"
+                        )}
                         onClick={() => setViewMode("list")}
                       >
                         <List className="h-4 w-4" />
