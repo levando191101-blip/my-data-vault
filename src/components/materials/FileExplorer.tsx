@@ -31,12 +31,6 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
@@ -63,7 +57,6 @@ import {
   LayoutGrid,
   List,
   Plus,
-  MoreHorizontal,
   Pencil,
   Trash2,
   FolderPlus,
@@ -290,33 +283,6 @@ function DraggableFolderNode({
               <Folder className="h-4 w-4 text-muted-foreground shrink-0" />
             )}
             <span className="text-sm truncate flex-1">{node.name}</span>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <MoreHorizontal className="h-3 w-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-popover">
-                <DropdownMenuItem onClick={() => onEdit(node)}>
-                  <Pencil className="mr-2 h-3 w-3" />
-                  重命名
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onAddSub(node)}>
-                  <FolderPlus className="mr-2 h-3 w-3" />
-                  新建子文件夹
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onDelete(node)} className="text-destructive">
-                  <Trash2 className="mr-2 h-3 w-3" />
-                  删除
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent className="bg-popover w-52">
@@ -626,32 +592,6 @@ function DraggableFolderCard({
               >
                 {category.name}
               </span>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-popover">
-                  <DropdownMenuItem onClick={() => onEdit(category)}>
-                    <Pencil className="mr-2 h-4 w-4" />
-                    重命名
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onAddSub(category)}>
-                    <FolderPlus className="mr-2 h-4 w-4" />
-                    新建子文件夹
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onDelete(category)} className="text-destructive">
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    删除
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
             </CardContent>
           </Card>
         </ContextMenuTrigger>
@@ -728,32 +668,6 @@ function DraggableFolderCard({
             >
               {category.name}
             </span>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-popover">
-                <DropdownMenuItem onClick={() => onEdit(category)}>
-                  <Pencil className="mr-2 h-4 w-4" />
-                  重命名
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onAddSub(category)}>
-                  <FolderPlus className="mr-2 h-4 w-4" />
-                  新建子文件夹
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onDelete(category)} className="text-destructive">
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  删除
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </CardContent>
         </Card>
       </ContextMenuTrigger>
