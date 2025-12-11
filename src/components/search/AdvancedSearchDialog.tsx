@@ -298,13 +298,11 @@ export function AdvancedSearchDialog({
                       );
                       return [
                         <SelectItem key={category.id} value={category.id}>
-                          {category.icon && `${category.icon} `}
                           {category.name}
                         </SelectItem>,
                         ...children.map((child) => (
                           <SelectItem key={child.id} value={child.id}>
-                            　　{child.icon && `${child.icon} `}
-                            {child.name}
+                            　　{child.name}
                           </SelectItem>
                         )),
                       ];
