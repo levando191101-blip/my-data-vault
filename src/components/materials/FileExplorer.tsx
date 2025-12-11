@@ -72,6 +72,7 @@ import {
   Lasso,
   Tags,
   ArrowUpDown,
+  Search,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -765,6 +766,9 @@ export function FileExplorer({
     return (saved as "asc" | "desc") || "desc";
   });
   
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+  
   // Save sorting preferences to localStorage
   useEffect(() => {
     localStorage.setItem("materials-sort-field", sortField);
@@ -829,9 +833,22 @@ export function FileExplorer({
   const currentNode = currentCategory ? map.get(currentCategory) : null;
   const childCategories = currentNode?.children || (currentCategory === null ? roots : []);
   
-  // Filter and sort materials by current category
+  // Filter and sort materials by current category and search query
   const currentMaterials = materials
-    .filter(m => m.category_id === currentCategory)
+    .filter(m => {
+      // Filter by category
+      if (m.category_id !== currentCategory) return false;
+      
+      // Filter by search query
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        return (
+          m.title.toLowerCase().includes(query) ||
+          m.file_name.toLowerCase().includes(query)
+        );
+      }
+      return true;
+    })
     .sort((a, b) => {
       let comparison = 0;
       switch (sortField) {
@@ -1816,7 +1833,7 @@ export function FileExplorer({
               {/* Files */}
               {currentMaterials.length > 0 ? (
                 <div>
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
                     <div className="flex items-center gap-2">
                       {selectionMode && (
                         <Checkbox
@@ -1828,7 +1845,26 @@ export function FileExplorer({
                         文件 {selectionMode && selectedMaterials.size > 0 && `(已选 ${selectedMaterials.size})`}
                       </h4>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="relative">
+                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                        <Input
+                          placeholder="搜索文件..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="h-7 w-[140px] pl-7 text-xs"
+                        />
+                        {searchQuery && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-0 top-1/2 -translate-y-1/2 h-7 w-7"
+                            onClick={() => setSearchQuery("")}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
