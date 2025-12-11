@@ -71,6 +71,7 @@ import {
   FolderSymlink,
   Lasso,
   Tags,
+  ArrowUpDown,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -753,6 +754,10 @@ export function FileExplorer({
   const [activeItem, setActiveItem] = useState<DragItem | null>(null);
   const [batchDragCount, setBatchDragCount] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Sorting state
+  const [sortField, setSortField] = useState<"name" | "size" | "date" | "type">("date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   // Batch selection states
   const [selectionMode, setSelectionMode] = useState(false);
@@ -812,8 +817,27 @@ export function FileExplorer({
   const currentNode = currentCategory ? map.get(currentCategory) : null;
   const childCategories = currentNode?.children || (currentCategory === null ? roots : []);
   
-  // Filter materials by current category
-  const currentMaterials = materials.filter(m => m.category_id === currentCategory);
+  // Filter and sort materials by current category
+  const currentMaterials = materials
+    .filter(m => m.category_id === currentCategory)
+    .sort((a, b) => {
+      let comparison = 0;
+      switch (sortField) {
+        case "name":
+          comparison = a.title.localeCompare(b.title, "zh-CN");
+          break;
+        case "size":
+          comparison = a.file_size - b.file_size;
+          break;
+        case "date":
+          comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          break;
+        case "type":
+          comparison = a.file_type.localeCompare(b.file_type);
+          break;
+      }
+      return sortOrder === "asc" ? comparison : -comparison;
+    });
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -1811,6 +1835,28 @@ export function FileExplorer({
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
+                      <Select 
+                        value={`${sortField}-${sortOrder}`} 
+                        onValueChange={(v) => {
+                          const [field, order] = v.split("-") as [typeof sortField, typeof sortOrder];
+                          setSortField(field);
+                          setSortOrder(order);
+                        }}
+                      >
+                        <SelectTrigger className="h-7 w-[120px] text-xs">
+                          <ArrowUpDown className="h-3.5 w-3.5 mr-1" />
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="date-desc">最新上传</SelectItem>
+                          <SelectItem value="date-asc">最早上传</SelectItem>
+                          <SelectItem value="name-asc">名称 A-Z</SelectItem>
+                          <SelectItem value="name-desc">名称 Z-A</SelectItem>
+                          <SelectItem value="size-desc">大小降序</SelectItem>
+                          <SelectItem value="size-asc">大小升序</SelectItem>
+                          <SelectItem value="type-asc">类型排序</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <Tabs value={fileViewMode} onValueChange={(v) => setFileViewMode(v as "grid" | "list")}>
                         <TabsList className="h-7">
                           <TabsTrigger value="grid" className="h-5 px-1.5">
