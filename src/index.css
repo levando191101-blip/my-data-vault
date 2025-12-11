@@ -120,15 +120,52 @@
     @apply bg-background text-foreground;
   }
 
-  /* Smooth theme transitions */
+  /* Ultra smooth theme transitions with View Transitions API support */
+  @supports (view-transition-name: none) {
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+      animation-duration: 0.5s;
+      animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  }
+
+  /* Fallback for browsers without View Transitions */
   html {
-    transition: color 0.3s ease, background-color 0.3s ease;
+    transition: 
+      color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+      background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   html *,
   html *::before,
   html *::after {
-    transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    transition: 
+      color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+      background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+      fill 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+      stroke 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Smooth transition for SVG icons */
+  svg {
+    transition: 
+      fill 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+      stroke 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+      color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Smooth transition for images and media */
+  img, video, iframe {
+    transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Prevent transition on page load */
+  .no-transitions,
+  .no-transitions * {
+    transition: none !important;
   }
 }
 
