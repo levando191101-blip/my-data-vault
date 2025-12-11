@@ -1730,7 +1730,7 @@ export function FileExplorer({
                 />
               )}
               {/* Show child folders */}
-              {childCategories.length > 0 && (
+              {allChildCategories.length > 0 && (
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
                     <div className="flex items-center gap-2">
@@ -1826,30 +1826,36 @@ export function FileExplorer({
                     </div>
                   )}
 
-                  <div className={cn(
-                    folderViewMode === "grid" 
-                      ? "grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-                      : "space-y-2"
-                  )}>
-                    {childCategories.map((cat) => (
-                      <DraggableFolderCard
-                        key={cat.id}
-                        category={cat}
-                        onClick={() => setCurrentCategory(cat.id)}
-                        onEdit={openEditDialog}
-                        onDelete={handleDeleteCategory}
-                        onAddSub={openCreateDialog}
-                        onMoveTo={handleMoveFolder}
-                        onCopyTo={handleCopyFolder}
-                        allCategories={categories}
-                        viewMode={folderViewMode}
-                        selectionMode={selectionMode}
-                        isSelected={selectedFolders.has(cat.id)}
-                        isPendingSelection={pendingSelectedIds.has(`folder-${cat.id}`)}
-                        onSelect={handleSelectFolder}
-                      />
-                    ))}
-                  </div>
+                  {childCategories.length > 0 ? (
+                    <div className={cn(
+                      folderViewMode === "grid" 
+                        ? "grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                        : "space-y-2"
+                    )}>
+                      {childCategories.map((cat) => (
+                        <DraggableFolderCard
+                          key={cat.id}
+                          category={cat}
+                          onClick={() => setCurrentCategory(cat.id)}
+                          onEdit={openEditDialog}
+                          onDelete={handleDeleteCategory}
+                          onAddSub={openCreateDialog}
+                          onMoveTo={handleMoveFolder}
+                          onCopyTo={handleCopyFolder}
+                          allCategories={categories}
+                          viewMode={folderViewMode}
+                          selectionMode={selectionMode}
+                          isSelected={selectedFolders.has(cat.id)}
+                          isPendingSelection={pendingSelectedIds.has(`folder-${cat.id}`)}
+                          onSelect={handleSelectFolder}
+                        />
+                      ))}
+                    </div>
+                  ) : folderSearchQuery && (
+                    <p className="text-sm text-muted-foreground py-4 text-center">
+                      没有找到匹配的文件夹
+                    </p>
+                  )}
                 </div>
               )}
 
