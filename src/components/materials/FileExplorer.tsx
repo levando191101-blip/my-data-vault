@@ -768,6 +768,7 @@ export function FileExplorer({
   
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
+  const [folderSearchQuery, setFolderSearchQuery] = useState("");
   
   // Save sorting preferences to localStorage
   useEffect(() => {
@@ -829,9 +830,12 @@ export function FileExplorer({
   const { roots, map } = buildCategoryTree(categories);
   const categoryPath = getCategoryPath(currentCategory, categories);
   
-  // Get current folder's children
+  // Get current folder's children and filter by search
   const currentNode = currentCategory ? map.get(currentCategory) : null;
-  const childCategories = currentNode?.children || (currentCategory === null ? roots : []);
+  const allChildCategories = currentNode?.children || (currentCategory === null ? roots : []);
+  const childCategories = folderSearchQuery.trim()
+    ? allChildCategories.filter(cat => cat.name.toLowerCase().includes(folderSearchQuery.toLowerCase()))
+    : allChildCategories;
   
   // Filter and sort materials by current category and search query
   const currentMaterials = materials
@@ -1726,9 +1730,9 @@ export function FileExplorer({
                 />
               )}
               {/* Show child folders */}
-              {childCategories.length > 0 && (
+              {allChildCategories.length > 0 && (
                 <div className="mb-6">
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
                     <div className="flex items-center gap-2">
                       {selectionMode && (
                         <Checkbox
@@ -1741,6 +1745,25 @@ export function FileExplorer({
                       </h4>
                     </div>
                     <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                        <Input
+                          placeholder="搜索文件夹..."
+                          value={folderSearchQuery}
+                          onChange={(e) => setFolderSearchQuery(e.target.value)}
+                          className="h-7 w-[120px] pl-7 text-xs"
+                        />
+                        {folderSearchQuery && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-0 top-1/2 -translate-y-1/2 h-7 w-7"
+                            onClick={() => setFolderSearchQuery("")}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -1803,30 +1826,36 @@ export function FileExplorer({
                     </div>
                   )}
 
-                  <div className={cn(
-                    folderViewMode === "grid" 
-                      ? "grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-                      : "space-y-2"
-                  )}>
-                    {childCategories.map((cat) => (
-                      <DraggableFolderCard
-                        key={cat.id}
-                        category={cat}
-                        onClick={() => setCurrentCategory(cat.id)}
-                        onEdit={openEditDialog}
-                        onDelete={handleDeleteCategory}
-                        onAddSub={openCreateDialog}
-                        onMoveTo={handleMoveFolder}
-                        onCopyTo={handleCopyFolder}
-                        allCategories={categories}
-                        viewMode={folderViewMode}
-                        selectionMode={selectionMode}
-                        isSelected={selectedFolders.has(cat.id)}
-                        isPendingSelection={pendingSelectedIds.has(`folder-${cat.id}`)}
-                        onSelect={handleSelectFolder}
-                      />
-                    ))}
-                  </div>
+                  {childCategories.length > 0 ? (
+                    <div className={cn(
+                      folderViewMode === "grid" 
+                        ? "grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                        : "space-y-2"
+                    )}>
+                      {childCategories.map((cat) => (
+                        <DraggableFolderCard
+                          key={cat.id}
+                          category={cat}
+                          onClick={() => setCurrentCategory(cat.id)}
+                          onEdit={openEditDialog}
+                          onDelete={handleDeleteCategory}
+                          onAddSub={openCreateDialog}
+                          onMoveTo={handleMoveFolder}
+                          onCopyTo={handleCopyFolder}
+                          allCategories={categories}
+                          viewMode={folderViewMode}
+                          selectionMode={selectionMode}
+                          isSelected={selectedFolders.has(cat.id)}
+                          isPendingSelection={pendingSelectedIds.has(`folder-${cat.id}`)}
+                          onSelect={handleSelectFolder}
+                        />
+                      ))}
+                    </div>
+                  ) : folderSearchQuery && (
+                    <p className="text-sm text-muted-foreground py-4 text-center">
+                      没有找到匹配的文件夹
+                    </p>
+                  )}
                 </div>
               )}
 
