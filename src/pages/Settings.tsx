@@ -98,6 +98,59 @@ export default function Settings() {
           </div>
         </CardContent>
       </Card>
+
+      <Card className="border-2">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Download className="h-5 w-5 text-primary" />
+            数据导出
+          </CardTitle>
+          <CardDescription>导出你的资料数据和文件</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3">
+            <Button
+              variant="outline"
+              onClick={() => exportAsCSV(materials)}
+              disabled={exporting || materials.length === 0}
+              className="justify-start gap-2"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              导出为 CSV
+              <span className="ml-auto text-xs text-muted-foreground">
+                {materials.length} 条记录
+              </span>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => exportAsJSON(materials)}
+              disabled={exporting || materials.length === 0}
+              className="justify-start gap-2"
+            >
+              <FileJson className="h-4 w-4" />
+              导出为 JSON
+              <span className="ml-auto text-xs text-muted-foreground">
+                {materials.length} 条记录
+              </span>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => exportAllFiles(materials)}
+              disabled={exporting || materials.length === 0}
+              className="justify-start gap-2"
+            >
+              <Archive className="h-4 w-4" />
+              下载所有文件
+              <span className="ml-auto text-xs text-muted-foreground">
+                {materials.length} 个文件
+              </span>
+            </Button>
+          </div>
+          {exporting && (
+            <p className="text-sm text-muted-foreground">正在导出...</p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

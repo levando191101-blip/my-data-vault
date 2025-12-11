@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
@@ -17,6 +18,7 @@ export interface UploadOptions {
 
 export function useFileUpload() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
 
   const updateFileProgress = useCallback((id: string, updates: Partial<UploadingFile>) => {
@@ -99,6 +101,10 @@ export function useFileUpload() {
       }
 
       updateFileProgress(fileId, { progress: 100, status: 'completed' });
+      
+      // 刷新材料列表，立即显示新上传的文件
+      queryClient.invalidateQueries({ queryKey: ['materials'] });
+      
       return true;
     } catch (error: any) {
       updateFileProgress(fileId, { 
@@ -107,7 +113,7 @@ export function useFileUpload() {
       });
       return false;
     }
-  }, [user, updateFileProgress]);
+  }, [user, updateFileProgress, queryClient]);
 
   const uploadFiles = useCallback(async (files: File[], options?: UploadOptions) => {
     const results = await Promise.all(files.map(file => uploadFile(file, options)));
