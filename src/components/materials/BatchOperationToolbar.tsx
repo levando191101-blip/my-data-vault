@@ -60,7 +60,7 @@ export function BatchOperationToolbar({
                       <Square className="h-4 w-4" />
                     )}
                     {isAllSelected ? "取消全选" : "全选"}
-                  </Tooltip>
+                  </Button>
                 </TooltipTrigger>
                 <TooltipContent>
                   {isAllSelected ? `取消选择所有 ${totalCount} 项` : `选择所有 ${totalCount} 项`}

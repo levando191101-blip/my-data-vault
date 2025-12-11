@@ -171,6 +171,56 @@ export type Database = {
         }
         Relationships: []
       }
+      shares: {
+        Row: {
+          allow_download: boolean | null
+          allow_preview: boolean | null
+          created_at: string
+          download_count: number | null
+          expires_at: string | null
+          id: string
+          material_id: string
+          max_downloads: number | null
+          password: string | null
+          share_code: string
+          user_id: string
+        }
+        Insert: {
+          allow_download?: boolean | null
+          allow_preview?: boolean | null
+          created_at?: string
+          download_count?: number | null
+          expires_at?: string | null
+          id?: string
+          material_id: string
+          max_downloads?: number | null
+          password?: string | null
+          share_code: string
+          user_id: string
+        }
+        Update: {
+          allow_download?: boolean | null
+          allow_preview?: boolean | null
+          created_at?: string
+          download_count?: number | null
+          expires_at?: string | null
+          id?: string
+          material_id?: string
+          max_downloads?: number | null
+          password?: string | null
+          share_code?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shares_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tags: {
         Row: {
           color: string
