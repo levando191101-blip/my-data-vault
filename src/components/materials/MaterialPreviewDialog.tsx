@@ -10,7 +10,7 @@ import { Download, Loader2 } from "lucide-react";
 import { Material } from "@/hooks/useMaterials";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import ReactPlayer from "react-player";
+
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import "prismjs/themes/prism-tomorrow.css";
@@ -167,22 +167,19 @@ export function MaterialPreviewDialog({
               )}
               {isVideo && (
                 <div className="flex items-center justify-center h-full bg-black rounded-lg">
-                  <ReactPlayer
-                    url={signedUrl}
+                  <video
+                    src={signedUrl}
                     controls
-                    width="100%"
-                    height="auto"
-                    style={{ maxHeight: "70vh" }}
+                    className="w-full h-auto max-h-[70vh]"
                   />
                 </div>
               )}
               {isAudio && (
                 <div className="flex items-center justify-center h-64">
-                  <ReactPlayer
-                    url={signedUrl}
+                  <audio
+                    src={signedUrl}
                     controls
-                    width="100%"
-                    height="80px"
+                    className="w-full"
                   />
                 </div>
               )}
