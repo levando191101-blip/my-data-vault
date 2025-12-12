@@ -134,6 +134,36 @@ export function ShareManager() {
     return <div className="text-muted-foreground text-sm">加载中...</div>;
   }
 
+  const getInvalidShares = () => {
+    return shares.filter(share => {
+      const status = getShareStatus(share);
+      return status.variant !== 'default';
+    });
+  };
+
+  const handleBatchDeleteInvalid = async () => {
+    const invalidShares = getInvalidShares();
+    if (invalidShares.length === 0) {
+      toast.info('没有过期或失效的分享链接');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('shares')
+        .delete()
+        .in('id', invalidShares.map(s => s.id));
+
+      if (error) throw error;
+
+      setShares(shares.filter(s => !invalidShares.some(inv => inv.id === s.id)));
+      toast.success(`已删除 ${invalidShares.length} 个失效分享`);
+    } catch (error) {
+      console.error('Failed to batch delete shares:', error);
+      toast.error('批量删除失败');
+    }
+  };
+
   if (shares.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
@@ -143,8 +173,23 @@ export function ShareManager() {
     );
   }
 
+  const invalidCount = getInvalidShares().length;
+
   return (
     <div className="space-y-4">
+      {invalidCount > 0 && (
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleBatchDeleteInvalid}
+            className="text-destructive hover:text-destructive"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            清理失效链接 ({invalidCount})
+          </Button>
+        </div>
+      )}
       <Table>
         <TableHeader>
           <TableRow>
