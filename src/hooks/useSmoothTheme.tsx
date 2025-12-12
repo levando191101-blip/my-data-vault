@@ -1,23 +1,22 @@
 import { useTheme as useNextTheme } from 'next-themes';
 
-// Declare View Transitions API types
-declare global {
-  interface Document {
-    startViewTransition?: (callback: () => void) => {
-      finished: Promise<void>;
-      ready: Promise<void>;
-      updateCallbackDone: Promise<void>;
-    };
-  }
+// View Transitions API type (avoid duplicate global declaration)
+interface ViewTransition {
+  finished: Promise<void>;
+  ready: Promise<void>;
+  updateCallbackDone: Promise<void>;
 }
+
+type StartViewTransition = (callback: () => void) => ViewTransition;
 
 export function useSmoothTheme() {
   const { theme, setTheme: originalSetTheme, ...rest } = useNextTheme();
 
   const setTheme = (newTheme: string) => {
     // Check if browser supports View Transitions API
-    if (document.startViewTransition) {
-      document.startViewTransition(() => {
+    const doc = document as Document & { startViewTransition?: StartViewTransition };
+    if (doc.startViewTransition) {
+      doc.startViewTransition(() => {
         originalSetTheme(newTheme);
       });
     } else {

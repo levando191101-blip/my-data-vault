@@ -40,6 +40,7 @@ import {
   FolderOpen,
   FolderSymlink,
   Copy,
+  Share2,
 } from "lucide-react";
 import { Material } from "@/hooks/useMaterials";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,6 +55,7 @@ interface DraggableMaterialCardProps {
   onPreview?: (material: Material) => void;
   onMoveTo?: (materialId: string, categoryId: string | null) => void;
   onCopyTo?: (materialId: string, categoryId: string | null) => void;
+  onShare?: (material: Material) => void;
   isDragging?: boolean;
   isSelected?: boolean;
   isPendingSelection?: boolean;
@@ -110,6 +112,7 @@ export function DraggableMaterialCard({
   onPreview,
   onMoveTo,
   onCopyTo,
+  onShare,
   isSelected = false,
   isPendingSelection = false,
   onSelect,
@@ -282,6 +285,15 @@ export function DraggableMaterialCard({
             )}
           </ContextMenuSubContent>
         </ContextMenuSub>
+      )}
+      {onShare && (
+        <>
+          <ContextMenuSeparator />
+          <ContextMenuItem onClick={() => onShare(material)}>
+            <Share2 className="mr-2 h-4 w-4" />
+            分享
+          </ContextMenuItem>
+        </>
       )}
       <ContextMenuSeparator />
       <ContextMenuItem 

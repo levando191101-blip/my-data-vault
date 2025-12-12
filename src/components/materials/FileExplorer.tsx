@@ -97,6 +97,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { useLassoSelection } from "@/hooks/useLassoSelection";
 import { BatchTagsDialog } from "./BatchTagsDialog";
+import { ShareDialog } from "./ShareDialog";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface FileExplorerProps {
@@ -792,6 +793,10 @@ export function FileExplorer({
   
   // Batch tags dialog
   const [batchTagsDialogOpen, setBatchTagsDialogOpen] = useState(false);
+
+  // Share dialog
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [shareMaterial, setShareMaterial] = useState<Material | null>(null);
 
   // Lasso selection
   const contentAreaRef = useRef<HTMLDivElement>(null);
@@ -2013,6 +2018,10 @@ export function FileExplorer({
                           onPreview={onPreview}
                           onMoveTo={handleMoveMaterial}
                           onCopyTo={handleCopyMaterial}
+                          onShare={(m) => {
+                            setShareMaterial(m);
+                            setShareDialogOpen(true);
+                          }}
                           selectionMode={selectionMode}
                           isSelected={selectedMaterials.has(material.id)}
                           isPendingSelection={pendingSelectedIds.has(`material-${material.id}`)}
@@ -2132,6 +2141,16 @@ export function FileExplorer({
         selectedMaterialIds={Array.from(selectedMaterials)}
         onSave={handleBatchTagsEdit}
       />
+
+      {/* Share Dialog */}
+      {shareMaterial && (
+        <ShareDialog
+          open={shareDialogOpen}
+          onOpenChange={setShareDialogOpen}
+          materialId={shareMaterial.id}
+          materialTitle={shareMaterial.title}
+        />
+      )}
     </DndContext>
   );
 }

@@ -13,6 +13,7 @@ import Materials from "./pages/Materials";
 import Search from "./pages/Search";
 import Settings from "./pages/Settings";
 import Trash from "./pages/Trash";
+import Share from "./pages/Share";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +46,7 @@ function AppRoutes() {
       <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
       <Route path="/trash" element={<ProtectedRoute><Trash /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+      <Route path="/share/:code" element={<Share />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
