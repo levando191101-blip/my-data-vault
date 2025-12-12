@@ -45,6 +45,12 @@ export function BatchOperationToolbar({
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-foreground">
+              已选择 <span className="text-primary font-bold">{selectedCount}</span> 项
+            </span>
+
+            <div className="h-4 w-px bg-border" />
+
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -68,10 +74,8 @@ export function BatchOperationToolbar({
               </Tooltip>
             </TooltipProvider>
 
-            <div className="h-4 w-px bg-border" />
-
-            <span className="text-sm font-medium text-foreground">
-              已选择 <span className="text-primary font-bold">{selectedCount}</span> 项
+            <span className="text-xs text-muted-foreground">
+              提示：右键可快速操作单个文件
             </span>
           </div>
 
@@ -139,15 +143,20 @@ export function BatchOperationToolbar({
                 <TooltipContent>批量删除</TooltipContent>
               </Tooltip>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onDeselectAll}
-                className="gap-1"
-              >
-                <X className="h-4 w-4" />
-                取消
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onDeselectAll}
+                    className="gap-1 hover:bg-destructive/10 hover:border-destructive/50"
+                  >
+                    <X className="h-4 w-4" />
+                    清除选择
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>清除所有选择（ESC 键快捷键）</TooltipContent>
+              </Tooltip>
             </TooltipProvider>
           </div>
         </div>

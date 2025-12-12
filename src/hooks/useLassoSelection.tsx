@@ -99,6 +99,9 @@ export function useLassoSelection({
     if (!container) return;
 
     const handleMouseDown = (e: MouseEvent) => {
+      // ⚠️ 关键修复：只响应左键点击，避免干扰右键菜单
+      if (e.button !== 0) return;
+
       // Remove shift key requirement for smoother experience
       // if (!e.shiftKey) return;
 
@@ -109,6 +112,8 @@ export function useLassoSelection({
         target.closest('input') ||
         target.closest('[role="checkbox"]') ||
         target.closest('[data-radix-collection-item]') ||
+        target.closest('[data-radix-context-menu-trigger]') ||  // 排除 ContextMenu 触发器
+        target.closest('[data-radix-context-menu-content]') ||  // 排除 ContextMenu 内容
         target.closest('[draggable="true"]') ||
         target.closest('.cursor-grab') ||
         target.closest('[data-radix-scroll-area-scrollbar]')
