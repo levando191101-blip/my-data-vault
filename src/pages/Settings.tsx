@@ -5,10 +5,11 @@ import { useMaterials } from '@/hooks/useMaterials';
 import { useDataExport } from '@/hooks/useDataExport';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { User, Mail, Palette, FolderTree, Tags, Download, FileJson, FileSpreadsheet, Archive } from 'lucide-react';
+import { User, Mail, Palette, FolderTree, Tags, Download, FileJson, FileSpreadsheet, Archive, Share2 } from 'lucide-react';
 import { CategoryManager } from '@/components/categories/CategoryManager';
 import { TagManager } from '@/components/tags/TagManager';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { ShareManager } from '@/components/shares/ShareManager';
 
 export default function Settings() {
   const { user } = useAuth();
@@ -80,6 +81,19 @@ export default function Settings() {
         </CardHeader>
         <CardContent>
           <TagManager />
+        </CardContent>
+      </Card>
+
+      <Card className="border-2">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Share2 className="h-5 w-5 text-primary" />
+            分享管理
+          </CardTitle>
+          <CardDescription>查看和管理已创建的分享链接</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ShareManager />
         </CardContent>
       </Card>
 
