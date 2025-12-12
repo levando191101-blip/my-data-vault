@@ -43,7 +43,7 @@ export default function Auth() {
     e.preventDefault();
     setSignInErrors({});
     setIsLoading(true);
-    
+
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
@@ -62,13 +62,13 @@ export default function Auth() {
     }
 
     const { error } = await signIn(result.data.email, result.data.password);
-    
+
     if (error) {
       toast({
         variant: 'destructive',
         title: '登录失败',
-        description: error.message === 'Invalid login credentials' 
-          ? '邮箱或密码错误' 
+        description: error.message === 'Invalid login credentials'
+          ? '邮箱或密码错误'
           : error.message,
       });
     } else {
@@ -78,7 +78,7 @@ export default function Auth() {
       });
       navigate('/');
     }
-    
+
     setIsLoading(false);
   };
 
@@ -86,7 +86,7 @@ export default function Auth() {
     e.preventDefault();
     setSignUpErrors({});
     setIsLoading(true);
-    
+
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
@@ -107,7 +107,7 @@ export default function Auth() {
     }
 
     const { error } = await signUp(result.data.email, result.data.password, result.data.displayName || '');
-    
+
     if (error) {
       let message = error.message;
       if (error.message.includes('already registered')) {
@@ -125,41 +125,48 @@ export default function Auth() {
       });
       navigate('/');
     }
-    
+
     setIsLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
+      {/* Dynamic Background Elements */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/20 blur-[120px] animate-float opacity-70" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-secondary/20 blur-[120px] animate-float opacity-70" style={{ animationDelay: '-1.5s' }} />
+        <div className="absolute top-[40%] left-[20%] w-[30%] h-[30%] rounded-full bg-accent/20 blur-[100px] animate-float opacity-50" style={{ animationDelay: '-2.5s' }} />
+      </div>
+
+      <div className="w-full max-w-md relative z-10 p-4">
         {/* Logo and Title */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-secondary mb-4">
-            <BookOpen className="w-8 h-8 text-primary-foreground" />
+        <div className="text-center mb-8 animate-float">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-primary/10 mb-6 shadow-glow-lg border border-primary/20 backdrop-blur-sm transition-transform hover:scale-110 duration-500">
+            <BookOpen className="w-10 h-10 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold text-foreground mb-3 tracking-tight drop-shadow-sm">
             学习资料管理
           </h1>
-          <p className="text-muted-foreground mt-2 flex items-center justify-center gap-1">
-            <Sparkles className="w-4 h-4" />
-            管理你的学习资源
+          <p className="text-muted-foreground flex items-center justify-center gap-2 text-lg">
+            <Sparkles className="w-5 h-5 text-primary" />
+            <span className="opacity-90">管理你的知识宇宙</span>
           </p>
         </div>
 
-        <Card className="border-2">
-          <CardHeader className="text-center pb-2">
-            <CardTitle>开始使用</CardTitle>
-            <CardDescription>登录或注册以管理你的学习资料</CardDescription>
+        <Card className="border-0 bg-white/50 dark:bg-black/40 backdrop-blur-xl shadow-2xl overflow-hidden ring-1 ring-white/20">
+          <CardHeader className="text-center pb-6">
+            <CardTitle className="text-2xl">欢迎回来</CardTitle>
+            <CardDescription className="text-base">开启你的沉浸式学习之旅</CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">登录</TabsTrigger>
-                <TabsTrigger value="signup">注册</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 mb-6 bg-muted/50 p-1 rounded-xl">
+                <TabsTrigger value="signin" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all duration-300">登录</TabsTrigger>
+                <TabsTrigger value="signup" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all duration-300">注册</TabsTrigger>
               </TabsList>
-              
-              <TabsContent value="signin">
-                <form onSubmit={handleSignIn} className="space-y-4 mt-4">
+
+              <TabsContent value="signin" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <form onSubmit={handleSignIn} className="space-y-5">
                   <div className="space-y-2">
                     <Label htmlFor="signin-email">邮箱</Label>
                     <Input
@@ -168,7 +175,7 @@ export default function Auth() {
                       type="email"
                       placeholder="your@email.com"
                       required
-                      className={signInErrors.email ? 'border-destructive' : ''}
+                      className={`bg-background/50 border-white/20 focus:border-primary/50 focus:ring-primary/20 transition-all duration-300 ${signInErrors.email ? 'border-destructive' : ''}`}
                     />
                     {signInErrors.email && (
                       <p className="text-sm text-destructive">{signInErrors.email}</p>
@@ -182,20 +189,20 @@ export default function Auth() {
                       type="password"
                       placeholder="••••••••"
                       required
-                      className={signInErrors.password ? 'border-destructive' : ''}
+                      className={`bg-background/50 border-white/20 focus:border-primary/50 focus:ring-primary/20 transition-all duration-300 ${signInErrors.password ? 'border-destructive' : ''}`}
                     />
                     {signInErrors.password && (
                       <p className="text-sm text-destructive">{signInErrors.password}</p>
                     )}
                   </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? '登录中...' : '登录'}
+                  <Button type="submit" className="w-full btn-primary-modern h-12 text-lg" disabled={isLoading}>
+                    {isLoading ? '登录中...' : '登 录'}
                   </Button>
                 </form>
               </TabsContent>
-              
-              <TabsContent value="signup">
-                <form onSubmit={handleSignUp} className="space-y-4 mt-4">
+
+              <TabsContent value="signup" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <form onSubmit={handleSignUp} className="space-y-5">
                   <div className="space-y-2">
                     <Label htmlFor="signup-name">昵称</Label>
                     <Input
@@ -203,7 +210,7 @@ export default function Auth() {
                       name="displayName"
                       type="text"
                       placeholder="你的昵称"
-                      className={signUpErrors.displayName ? 'border-destructive' : ''}
+                      className={`bg-background/50 border-white/20 focus:border-primary/50 focus:ring-primary/20 transition-all duration-300 ${signUpErrors.displayName ? 'border-destructive' : ''}`}
                     />
                     {signUpErrors.displayName && (
                       <p className="text-sm text-destructive">{signUpErrors.displayName}</p>
@@ -217,7 +224,7 @@ export default function Auth() {
                       type="email"
                       placeholder="your@email.com"
                       required
-                      className={signUpErrors.email ? 'border-destructive' : ''}
+                      className={`bg-background/50 border-white/20 focus:border-primary/50 focus:ring-primary/20 transition-all duration-300 ${signUpErrors.email ? 'border-destructive' : ''}`}
                     />
                     {signUpErrors.email && (
                       <p className="text-sm text-destructive">{signUpErrors.email}</p>
@@ -231,14 +238,14 @@ export default function Auth() {
                       type="password"
                       placeholder="至少8位，含大写字母和数字"
                       required
-                      className={signUpErrors.password ? 'border-destructive' : ''}
+                      className={`bg-background/50 border-white/20 focus:border-primary/50 focus:ring-primary/20 transition-all duration-300 ${signUpErrors.password ? 'border-destructive' : ''}`}
                     />
                     {signUpErrors.password && (
                       <p className="text-sm text-destructive">{signUpErrors.password}</p>
                     )}
                   </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? '注册中...' : '注册'}
+                  <Button type="submit" className="w-full btn-primary-modern h-12 text-lg" disabled={isLoading}>
+                    {isLoading ? '注册中...' : '注 册'}
                   </Button>
                 </form>
               </TabsContent>

@@ -140,26 +140,26 @@ function buildCategoryTree(categories: Category[]) {
 // Get category path for breadcrumb
 function getCategoryPath(categoryId: string | null, categories: Category[]): Category[] {
   if (!categoryId) return [];
-  
+
   const path: Category[] = [];
   let current = categories.find((c) => c.id === categoryId);
-  
+
   while (current) {
     path.unshift(current);
-    current = current.parent_id 
-      ? categories.find((c) => c.id === current!.parent_id) 
+    current = current.parent_id
+      ? categories.find((c) => c.id === current!.parent_id)
       : undefined;
   }
-  
+
   return path;
 }
 
 // Root drop zone component - separate component to ensure proper registration
-function RootDropZone({ 
-  isSelected, 
-  onClick 
-}: { 
-  isSelected: boolean; 
+function RootDropZone({
+  isSelected,
+  onClick
+}: {
+  isSelected: boolean;
   onClick: () => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({
@@ -236,7 +236,7 @@ function DraggableFolderNode({
     return false;
   };
 
-  const moveTargets = allCategories.filter(c => 
+  const moveTargets = allCategories.filter(c =>
     c.id !== node.id && !isChildOf(node.id, c.id)
   );
 
@@ -308,7 +308,7 @@ function DraggableFolderNode({
               移动到...
             </ContextMenuSubTrigger>
             <ContextMenuSubContent className="bg-popover w-48 max-h-64 overflow-y-auto">
-              <ContextMenuItem 
+              <ContextMenuItem
                 onClick={() => onMoveTo(node.id, null)}
                 disabled={node.parent_id === null}
               >
@@ -317,7 +317,7 @@ function DraggableFolderNode({
               </ContextMenuItem>
               <ContextMenuSeparator />
               {moveTargets.map(target => (
-                <ContextMenuItem 
+                <ContextMenuItem
                   key={target.id}
                   onClick={() => onMoveTo(node.id, target.id)}
                   disabled={node.parent_id === target.id}
@@ -345,7 +345,7 @@ function DraggableFolderNode({
               </ContextMenuItem>
               <ContextMenuSeparator />
               {moveTargets.map(target => (
-                <ContextMenuItem 
+                <ContextMenuItem
                   key={target.id}
                   onClick={() => onCopyTo(node.id, target.id)}
                 >
@@ -441,7 +441,7 @@ function DraggableFolderCard({
     return false;
   };
 
-  const moveTargets = allCategories.filter(c => 
+  const moveTargets = allCategories.filter(c =>
     c.id !== category.id && !isChildOf(category.id, c.id)
   );
 
@@ -467,7 +467,7 @@ function DraggableFolderCard({
           移动到...
         </ContextMenuSubTrigger>
         <ContextMenuSubContent className="bg-popover w-48 max-h-64 overflow-y-auto">
-          <ContextMenuItem 
+          <ContextMenuItem
             onClick={() => onMoveTo(category.id, null)}
             disabled={category.parent_id === null}
           >
@@ -476,7 +476,7 @@ function DraggableFolderCard({
           </ContextMenuItem>
           <ContextMenuSeparator />
           {moveTargets.map(target => (
-            <ContextMenuItem 
+            <ContextMenuItem
               key={target.id}
               onClick={() => onMoveTo(category.id, target.id)}
               disabled={category.parent_id === target.id}
@@ -504,7 +504,7 @@ function DraggableFolderCard({
           </ContextMenuItem>
           <ContextMenuSeparator />
           {moveTargets.map(target => (
-            <ContextMenuItem 
+            <ContextMenuItem
               key={target.id}
               onClick={() => onCopyTo(category.id, target.id)}
             >
@@ -556,7 +556,7 @@ function DraggableFolderCard({
             <CardContent className="p-3 flex items-center gap-3">
               {selectionMode ? (
                 <div className="flex items-center gap-1">
-                  <Checkbox 
+                  <Checkbox
                     checked={isSelected}
                     onCheckedChange={(checked) => onSelect?.(category.id, !!checked)}
                     onClick={(e) => e.stopPropagation()}
@@ -583,14 +583,14 @@ function DraggableFolderCard({
                   <GripVertical className="h-4 w-4 text-muted-foreground" />
                 </button>
               )}
-              <div 
+              <div
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 cursor-pointer"
                 onClick={onClick}
               >
                 <Folder className="h-5 w-5 text-primary" />
               </div>
-              <span 
-                className="text-sm font-medium cursor-pointer flex-1" 
+              <span
+                className="text-sm font-medium cursor-pointer flex-1"
                 onClick={onClick}
               >
                 {category.name}
@@ -631,7 +631,7 @@ function DraggableFolderCard({
           <CardContent className="p-3 flex items-center gap-3">
             {selectionMode ? (
               <div className="flex items-center gap-1">
-                <Checkbox 
+                <Checkbox
                   checked={isSelected}
                   onCheckedChange={(checked) => onSelect?.(category.id, !!checked)}
                   onClick={(e) => e.stopPropagation()}
@@ -658,14 +658,14 @@ function DraggableFolderCard({
                 <GripVertical className="h-4 w-4 text-muted-foreground" />
               </button>
             )}
-            <div 
+            <div
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 cursor-pointer"
               onClick={onClick}
             >
               <Folder className="h-5 w-5 text-primary" />
             </div>
-            <span 
-              className="text-sm font-medium cursor-pointer truncate flex-1 min-w-0" 
+            <span
+              className="text-sm font-medium cursor-pointer truncate flex-1 min-w-0"
               title={category.name}
               onClick={onClick}
             >
@@ -680,19 +680,19 @@ function DraggableFolderCard({
 }
 
 // Drag overlay content
-function DragOverlayContent({ 
-  item, 
+function DragOverlayContent({
+  item,
   categories,
   batchCount = 0,
-}: { 
-  item: DragItem | null; 
+}: {
+  item: DragItem | null;
   categories: Category[];
   batchCount?: number;
 }) {
   if (!item) return null;
-  
+
   const showBatchBadge = batchCount > 1;
-  
+
   if (item.type === "folder") {
     const category = categories.find(c => c.id === item.id);
     if (!category) return null;
@@ -712,10 +712,10 @@ function DragOverlayContent({
       </div>
     );
   }
-  
+
   const material = item.data as Material;
   if (!material) return null;
-  
+
   return (
     <div className="relative">
       <Card className="w-64 shadow-xl rotate-3 bg-background">
@@ -746,7 +746,7 @@ export function FileExplorer({
   const { user } = useAuth();
   const { createCategory, updateCategory, deleteCategory } = useCategories();
   const queryClient = useQueryClient();
-  
+
   const [layoutMode, setLayoutMode] = useState<"dual" | "single">("dual");
   const [showSidebar, setShowSidebar] = useState(true);
   const [folderViewMode, setFolderViewMode] = useState<"grid" | "list">("grid");
@@ -756,7 +756,7 @@ export function FileExplorer({
   const [activeItem, setActiveItem] = useState<DragItem | null>(null);
   const [batchDragCount, setBatchDragCount] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
-  
+
   // Sorting state with localStorage persistence
   const [sortField, setSortField] = useState<"name" | "size" | "date" | "type">(() => {
     const saved = localStorage.getItem("materials-sort-field");
@@ -766,11 +766,11 @@ export function FileExplorer({
     const saved = localStorage.getItem("materials-sort-order");
     return (saved as "asc" | "desc") || "desc";
   });
-  
+
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
   const [folderSearchQuery, setFolderSearchQuery] = useState("");
-  
+
   // Save sorting preferences to localStorage
   useEffect(() => {
     localStorage.setItem("materials-sort-field", sortField);
@@ -790,7 +790,7 @@ export function FileExplorer({
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [parentCategory, setParentCategory] = useState<Category | null>(null);
   const [categoryName, setCategoryName] = useState("");
-  
+
   // Batch tags dialog
   const [batchTagsDialogOpen, setBatchTagsDialogOpen] = useState(false);
 
@@ -800,12 +800,12 @@ export function FileExplorer({
 
   // Lasso selection
   const contentAreaRef = useRef<HTMLDivElement>(null);
-  
+
   const handleLassoSelectionComplete = useCallback((selectedIds: Set<string>) => {
     // Separate folder and material selections
     const folderIds = new Set<string>();
     const materialIds = new Set<string>();
-    
+
     selectedIds.forEach(id => {
       if (id.startsWith('folder-')) {
         folderIds.add(id.replace('folder-', ''));
@@ -813,12 +813,17 @@ export function FileExplorer({
         materialIds.add(id.replace('material-', ''));
       }
     });
-    
+
     if (folderIds.size > 0 || materialIds.size > 0) {
       setSelectionMode(true);
     }
     setSelectedFolders(folderIds);
     setSelectedMaterials(materialIds);
+  }, []);
+
+  const handleLassoStart = useCallback(() => {
+    setSelectedFolders(new Set());
+    setSelectedMaterials(new Set());
   }, []);
 
   const {
@@ -828,26 +833,27 @@ export function FileExplorer({
   } = useLassoSelection({
     containerRef: contentAreaRef,
     onSelectionComplete: handleLassoSelectionComplete,
+    onSelectionStart: handleLassoStart,
     itemSelector: '[data-selectable-item]',
     getItemId: (element) => element.getAttribute('data-item-id'),
     enabled: true,
   });
   const { roots, map } = buildCategoryTree(categories);
   const categoryPath = getCategoryPath(currentCategory, categories);
-  
+
   // Get current folder's children and filter by search
   const currentNode = currentCategory ? map.get(currentCategory) : null;
   const allChildCategories = currentNode?.children || (currentCategory === null ? roots : []);
   const childCategories = folderSearchQuery.trim()
     ? allChildCategories.filter(cat => cat.name.toLowerCase().includes(folderSearchQuery.toLowerCase()))
     : allChildCategories;
-  
+
   // Filter and sort materials by current category and search query
   const currentMaterials = materials
     .filter(m => {
       // Filter by category
       if (m.category_id !== currentCategory) return false;
-      
+
       // Filter by search query
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
@@ -924,15 +930,15 @@ export function FileExplorer({
   const handleMoveFolder = async (folderId: string, targetParentId: string | null) => {
     const folder = categories.find(c => c.id === folderId);
     if (!folder || folder.parent_id === targetParentId) return;
-    
+
     setIsSaving(true);
     try {
       await supabase
         .from("categories")
         .update({ parent_id: targetParentId })
         .eq("id", folderId);
-      
-      const targetName = targetParentId 
+
+      const targetName = targetParentId
         ? categories.find(c => c.id === targetParentId)?.name || "目标文件夹"
         : "根目录";
       toast({ title: `已移动到「${targetName}」` });
@@ -947,19 +953,19 @@ export function FileExplorer({
   const handleMoveMaterial = async (materialId: string, targetCategoryId: string | null) => {
     const material = materials.find(m => m.id === materialId);
     if (!material || material.category_id === targetCategoryId) return;
-    
+
     setIsSaving(true);
     try {
       await supabase
         .from("materials")
         .update({ category_id: targetCategoryId })
         .eq("id", materialId);
-      
-      const targetName = targetCategoryId 
+
+      const targetName = targetCategoryId
         ? categories.find(c => c.id === targetCategoryId)?.name || "目标文件夹"
         : "根目录";
       toast({ title: `已移动到「${targetName}」` });
-      onReorder(materials.map(m => 
+      onReorder(materials.map(m =>
         m.id === materialId ? { ...m, category_id: targetCategoryId } : m
       ));
     } catch (error) {
@@ -972,14 +978,14 @@ export function FileExplorer({
   const handleCopyMaterial = async (materialId: string, targetCategoryId: string | null) => {
     const material = materials.find(m => m.id === materialId);
     if (!material || !user) return;
-    
+
     setIsSaving(true);
     try {
       // Download the file
       const { data: fileData, error: downloadError } = await supabase.storage
         .from("materials")
         .download(material.file_path);
-      
+
       if (downloadError || !fileData) {
         throw new Error("下载文件失败");
       }
@@ -1016,7 +1022,7 @@ export function FileExplorer({
         throw new Error("创建记录失败");
       }
 
-      const targetName = targetCategoryId 
+      const targetName = targetCategoryId
         ? categories.find(c => c.id === targetCategoryId)?.name || "目标文件夹"
         : "根目录";
       toast({ title: `已复制到「${targetName}」` });
@@ -1031,7 +1037,7 @@ export function FileExplorer({
   const handleCopyFolder = async (folderId: string, targetParentId: string | null) => {
     const folder = categories.find(c => c.id === folderId);
     if (!folder || !user) return;
-    
+
     // Prevent copying folder to itself or its children
     const isDescendant = (parentId: string, childId: string): boolean => {
       const child = categories.find(c => c.id === childId);
@@ -1040,12 +1046,12 @@ export function FileExplorer({
       if (child.parent_id) return isDescendant(parentId, child.parent_id);
       return false;
     };
-    
+
     if (targetParentId && isDescendant(folderId, targetParentId)) {
       toast({ title: "不能复制到自身的子文件夹中", variant: "destructive" });
       return;
     }
-    
+
     setIsSaving(true);
     try {
       const { error } = await supabase
@@ -1058,7 +1064,7 @@ export function FileExplorer({
 
       if (error) throw error;
 
-      const targetName = targetParentId 
+      const targetName = targetParentId
         ? categories.find(c => c.id === targetParentId)?.name || "目标文件夹"
         : "根目录";
       toast({ title: `已复制到「${targetName}」` });
@@ -1102,7 +1108,7 @@ export function FileExplorer({
         setSelectionMode(false);
       }
     };
-    
+
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectionMode]);
@@ -1147,10 +1153,57 @@ export function FileExplorer({
     }
   };
 
+  // Smart context menu handlers
+  const handleContextDelete = (id: string, path: string) => {
+    if (selectionMode && selectedMaterials.has(id) && selectedMaterials.size > 1) {
+      handleBatchDeleteMaterials();
+    } else {
+      onDelete(id, path);
+    }
+  };
+
+  const handleContextMove = async (id: string, targetId: string | null) => {
+    if (selectionMode && selectedMaterials.has(id) && selectedMaterials.size > 1) {
+      setIsSaving(true);
+      try {
+        let count = 0;
+        for (const mId of selectedMaterials) {
+          const material = materials.find(m => m.id === mId);
+          if (material && material.category_id !== targetId) {
+            await supabase.from("materials").update({ category_id: targetId }).eq("id", mId);
+            await onSave(mId, {
+              title: material.title,
+              categoryId: targetId,
+              tagIds: material.tags?.map(t => t.id) || [],
+            });
+            count++;
+          }
+        }
+        toast({ title: `已移动 ${count} 个文件` });
+        setSelectedMaterials(new Set());
+        setSelectionMode(false);
+        // Refresh logic - might need improvement but onReorder triggers parent refresh usually
+        // Actually onReorder logic in Dashboard often just sets state. 
+        // We might want onCategoriesRefresh or invalidate queries.
+        const nextMaterials = materials.map(m =>
+          selectedMaterials.has(m.id) ? { ...m, category_id: targetId } : m
+        );
+        onReorder(nextMaterials);
+        queryClient.invalidateQueries({ queryKey: ["materials"] });
+      } catch (error) {
+        toast({ title: "移动失败", variant: "destructive" });
+      } finally {
+        setIsSaving(false);
+      }
+    } else {
+      handleMoveMaterial(id, targetId);
+    }
+  };
+
   const handleBatchDeleteMaterials = async () => {
     if (selectedMaterials.size === 0) return;
     if (!confirm(`确定要删除选中的 ${selectedMaterials.size} 个文件吗？`)) return;
-    
+
     const materialsToDelete = materials.filter(m => selectedMaterials.has(m.id));
     for (const material of materialsToDelete) {
       await onDelete(material.id, material.file_path);
@@ -1163,7 +1216,7 @@ export function FileExplorer({
   const handleBatchDeleteFolders = async () => {
     if (selectedFolders.size === 0) return;
     if (!confirm(`确定要删除选中的 ${selectedFolders.size} 个文件夹吗？`)) return;
-    
+
     for (const folderId of selectedFolders) {
       await deleteCategory(folderId);
     }
@@ -1176,7 +1229,7 @@ export function FileExplorer({
   const handleBatchMove = async () => {
     setIsSaving(true);
     const targetCategoryId = batchMoveCategoryId === "none" ? null : batchMoveCategoryId;
-    
+
     if (batchMoveType === "files") {
       for (const materialId of selectedMaterials) {
         const material = materials.find(m => m.id === materialId);
@@ -1203,11 +1256,11 @@ export function FileExplorer({
             if (child.parent_id) return isChild(parentId, child.parent_id);
             return false;
           };
-          
+
           if (targetCategoryId && isChild(folderId, targetCategoryId)) {
             continue; // Skip this folder
           }
-          
+
           await supabase
             .from("categories")
             .update({ parent_id: targetCategoryId })
@@ -1218,7 +1271,7 @@ export function FileExplorer({
       setSelectedFolders(new Set());
       onCategoriesRefresh?.();
     }
-    
+
     setIsSaving(false);
     setSelectionMode(false);
     setDialogOpen(false);
@@ -1226,18 +1279,18 @@ export function FileExplorer({
 
   const handleBatchDownload = async () => {
     if (selectedMaterials.size === 0) return;
-    
+
     const materialsToDownload = materials.filter(m => selectedMaterials.has(m.id));
     for (const material of materialsToDownload) {
       const { data, error } = await supabase.storage
         .from("materials")
         .createSignedUrl(material.file_path, 3600); // 1 hour expiry
-      
+
       if (error || !data?.signedUrl) {
         console.error("Failed to get signed URL for:", material.file_name, error);
         continue;
       }
-      
+
       await new Promise<void>(resolve => {
         setTimeout(() => {
           const link = document.createElement("a");
@@ -1256,8 +1309,8 @@ export function FileExplorer({
 
   // Batch tags edit handler
   const handleBatchTagsEdit = async (
-    materialIds: string[], 
-    tagIds: string[], 
+    materialIds: string[],
+    tagIds: string[],
     mode: 'add' | 'remove' | 'replace'
   ) => {
     setIsSaving(true);
@@ -1269,7 +1322,7 @@ export function FileExplorer({
             .from("material_tags")
             .delete()
             .eq("material_id", materialId);
-          
+
           // Add new tags if any
           if (tagIds.length > 0) {
             const tagInserts = tagIds.map(tagId => ({
@@ -1284,10 +1337,10 @@ export function FileExplorer({
             .from("material_tags")
             .select("tag_id")
             .eq("material_id", materialId);
-          
+
           const existingTagIds = new Set((existingTags || []).map((t: any) => t.tag_id));
           const newTagIds = tagIds.filter(id => !existingTagIds.has(id));
-          
+
           if (newTagIds.length > 0) {
             const tagInserts = newTagIds.map(tagId => ({
               material_id: materialId,
@@ -1306,10 +1359,10 @@ export function FileExplorer({
           }
         }
       }
-      
+
       // Invalidate materials cache to refresh
       queryClient.invalidateQueries({ queryKey: ["materials"] });
-      
+
       const modeText = mode === 'add' ? '添加' : mode === 'remove' ? '移除' : '替换';
       toast({ title: `已${modeText}标签（${materialIds.length} 个文件）` });
       setSelectedMaterials(new Set());
@@ -1336,7 +1389,7 @@ export function FileExplorer({
   // Drag handlers
   const handleDragStart = (event: DragStartEvent) => {
     const data = event.active.data.current as any;
-    
+
     if (data?.type === "folder") {
       const folderId = data.id as string;
       // Check if this folder is part of a batch selection
@@ -1370,23 +1423,23 @@ export function FileExplorer({
       return;
     }
 
-    console.log("Drop detected:", { 
-      activeId: active.id, 
+    console.log("Drop detected:", {
+      activeId: active.id,
       overId: over.id,
       activeData: active.data.current,
       overData: over.data.current,
-      batchMode: currentBatchCount > 1 
+      batchMode: currentBatchCount > 1
     });
 
     const activeData = active.data.current as any;
     const overData = over.data.current as any;
-    
+
     // Check if dropping onto a folder (including root where categoryId is null)
     if (overData?.type === "folder") {
       const targetCategoryId = overData.categoryId as string | null;
-      
+
       console.log("Dropping to folder target:", targetCategoryId);
-      
+
       // Helper to check if target is a child of a folder
       const isChild = (parentId: string, childId: string): boolean => {
         const child = categories.find(c => c.id === childId);
@@ -1395,55 +1448,55 @@ export function FileExplorer({
         if (child.parent_id) return isChild(parentId, child.parent_id);
         return false;
       };
-      
+
       // BATCH MODE: If dragging with selection active
       if (currentBatchCount > 1 && selectionMode) {
         setIsSaving(true);
         let movedFolders = 0;
         let movedFiles = 0;
-        
+
         try {
           // Move selected folders
           for (const folderId of selectedFolders) {
             const folder = categories.find(c => c.id === folderId);
             if (!folder) continue;
-            
+
             // Don't drop folder into itself or its children
             if (folderId === targetCategoryId) continue;
             if (targetCategoryId && isChild(folderId, targetCategoryId)) continue;
             if (folder.parent_id === targetCategoryId) continue;
-            
+
             await supabase
               .from("categories")
               .update({ parent_id: targetCategoryId })
               .eq("id", folderId);
             movedFolders++;
           }
-          
+
           // Move selected materials
           for (const materialId of selectedMaterials) {
             const material = materials.find(m => m.id === materialId);
             if (!material || material.category_id === targetCategoryId) continue;
-            
+
             await supabase
               .from("materials")
               .update({ category_id: targetCategoryId })
               .eq("id", materialId);
             movedFiles++;
           }
-          
-          const targetName = targetCategoryId 
+
+          const targetName = targetCategoryId
             ? categories.find(c => c.id === targetCategoryId)?.name || "目标文件夹"
             : "根目录";
-          
+
           const messages: string[] = [];
           if (movedFolders > 0) messages.push(`${movedFolders} 个文件夹`);
           if (movedFiles > 0) messages.push(`${movedFiles} 个文件`);
-          
+
           if (messages.length > 0) {
             toast({ title: `已移动 ${messages.join(" 和 ")} 到「${targetName}」` });
           }
-          
+
           // Clear selection
           setSelectedFolders(new Set());
           setSelectedMaterials(new Set());
@@ -1456,24 +1509,24 @@ export function FileExplorer({
         }
         return;
       }
-      
+
       // SINGLE ITEM MODE
       // If dragging a folder
       if (activeData?.type === "folder") {
         const folderId = activeData.id as string;
         const folder = categories.find(c => c.id === folderId);
-        
+
         console.log("Moving folder:", { folderId, currentParent: folder?.parent_id, targetCategoryId });
-        
+
         // Don't drop folder into itself
         if (folderId === targetCategoryId) return;
-        
+
         // Skip if already in target location
         if (folder?.parent_id === targetCategoryId) {
           console.log("Folder already in target location");
           return;
         }
-        
+
         if (targetCategoryId && isChild(folderId, targetCategoryId)) {
           toast({
             title: "无法移动",
@@ -1482,14 +1535,14 @@ export function FileExplorer({
           });
           return;
         }
-        
+
         setIsSaving(true);
         try {
           await supabase
             .from("categories")
             .update({ parent_id: targetCategoryId })
             .eq("id", folderId);
-          
+
           toast({ title: "文件夹已移动" });
           onCategoriesRefresh?.();
         } catch (error) {
@@ -1502,11 +1555,11 @@ export function FileExplorer({
         }
         return;
       }
-      
+
       // If dragging a material
       const materialId = active.id as string;
       const material = materials.find(m => m.id === materialId);
-      
+
       if (material && material.category_id !== targetCategoryId) {
         setIsSaving(true);
         try {
@@ -1514,7 +1567,7 @@ export function FileExplorer({
             .from("materials")
             .update({ category_id: targetCategoryId })
             .eq("id", materialId);
-          
+
           toast({ title: "文件已移动到目标文件夹" });
           await onSave(materialId, {
             title: material.title,
@@ -1547,45 +1600,45 @@ export function FileExplorer({
   const customCollisionDetection: CollisionDetection = useCallback((args) => {
     // Use pointerWithin for precise detection
     const pointerCollisions = pointerWithin(args);
-    
+
     // If pointer is directly over something, use that
     if (pointerCollisions.length > 0) {
       // Priority 1: Sidebar folder nodes (folder-{id})
       const sidebarFolderCollision = pointerCollisions.find(c => {
         const id = String(c.id);
-        return id.startsWith("folder-") && 
-               id !== "folder-root-sidebar" &&
-               !id.startsWith("card-folder-");
+        return id.startsWith("folder-") &&
+          id !== "folder-root-sidebar" &&
+          !id.startsWith("card-folder-");
       });
       if (sidebarFolderCollision) return [sidebarFolderCollision];
-      
+
       // Priority 2: Main area folder cards (card-folder-{id})
-      const cardFolderCollision = pointerCollisions.find(c => 
+      const cardFolderCollision = pointerCollisions.find(c =>
         String(c.id).startsWith("card-folder-")
       );
       if (cardFolderCollision) return [cardFolderCollision];
-      
+
       // Priority 3: Sidebar root (for moving to root)
-      const sidebarRootCollision = pointerCollisions.find(c => 
+      const sidebarRootCollision = pointerCollisions.find(c =>
         c.id === "folder-root-sidebar"
       );
       if (sidebarRootCollision) return [sidebarRootCollision];
-      
+
       // Priority 4: Content area (current directory)
-      const contentAreaCollision = pointerCollisions.find(c => 
+      const contentAreaCollision = pointerCollisions.find(c =>
         c.id === "content-area-current"
       );
       if (contentAreaCollision) return [contentAreaCollision];
-      
+
       return [pointerCollisions[0]];
     }
-    
+
     // Fallback to rectIntersection if pointer not over anything
     const rectCollisions = rectIntersection(args);
     if (rectCollisions.length > 0) {
       return [rectCollisions[0]];
     }
-    
+
     // Last resort: closestCenter
     return closestCenter(args);
   }, []);
@@ -1607,13 +1660,13 @@ export function FileExplorer({
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
-            
+
             {/* Root folder drop zone - using dedicated component */}
-            <RootDropZone 
+            <RootDropZone
               isSelected={currentCategory === null}
               onClick={() => setCurrentCategory(null)}
             />
-            
+
             <ScrollArea className="flex-1">
               <div className="p-2 space-y-0.5">
                 {roots.map((root) => (
@@ -1656,7 +1709,7 @@ export function FileExplorer({
                 )}
               </Button>
             )}
-            
+
             <Breadcrumb className="flex-1">
               <BreadcrumbList>
                 <BreadcrumbItem>
@@ -1710,7 +1763,7 @@ export function FileExplorer({
 
           {/* Content area with root drop zone */}
           <ScrollArea className="flex-1">
-            <div 
+            <div
               ref={(el) => {
                 setContentRootRef(el);
                 if (contentAreaRef) {
@@ -1783,7 +1836,7 @@ export function FileExplorer({
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>按住 Shift 拖拽可框选多个项目</p>
+                            <p>拖拽可框选多个项目</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
@@ -1833,7 +1886,7 @@ export function FileExplorer({
 
                   {childCategories.length > 0 ? (
                     <div className={cn(
-                      folderViewMode === "grid" 
+                      folderViewMode === "grid"
                         ? "grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
                         : "space-y-2"
                     )}>
@@ -1913,12 +1966,12 @@ export function FileExplorer({
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>按住 Shift 拖拽可框选多个项目</p>
+                            <p>拖拽可框选多个项目</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                      <Select 
-                        value={`${sortField}-${sortOrder}`} 
+                      <Select
+                        value={`${sortField}-${sortOrder}`}
                         onValueChange={(v) => {
                           const [field, order] = v.split("-") as [typeof sortField, typeof sortOrder];
                           setSortField(field);
@@ -2013,10 +2066,10 @@ export function FileExplorer({
                           key={material.id}
                           material={material}
                           categories={categories}
-                          onDelete={onDelete}
+                          onDelete={handleContextDelete}
                           onSave={onSave}
                           onPreview={onPreview}
-                          onMoveTo={handleMoveMaterial}
+                          onMoveTo={handleContextMove}
                           onCopyTo={handleCopyMaterial}
                           onShare={(m) => {
                             setShareMaterial(m);
@@ -2067,19 +2120,19 @@ export function FileExplorer({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {dialogType === "create" 
-                ? parentCategory 
-                  ? `在「${parentCategory.name}」下新建文件夹` 
+              {dialogType === "create"
+                ? parentCategory
+                  ? `在「${parentCategory.name}」下新建文件夹`
                   : "新建文件夹"
                 : dialogType === "edit"
-                ? "重命名文件夹"
-                : batchMoveType === "files"
-                ? "移动文件"
-                : "移动文件夹"
+                  ? "重命名文件夹"
+                  : batchMoveType === "files"
+                    ? "移动文件"
+                    : "移动文件夹"
               }
             </DialogTitle>
           </DialogHeader>
-          
+
           {dialogType === "batch-move" ? (
             <>
               <p className="text-sm text-muted-foreground">
