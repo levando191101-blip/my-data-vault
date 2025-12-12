@@ -7,6 +7,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { FileText, Image, Video, File, MoreVertical, Download, Trash2, ExternalLink, Pencil, Eye, Clock } from "lucide-react";
 import { Material } from "@/hooks/useMaterials";
 import { supabase } from "@/integrations/supabase/client";
@@ -120,8 +127,53 @@ export function MaterialCard({ material, onDelete, onEdit, onPreview }: Material
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   };
 
+  const canPreview = onPreview && (
+    material.file_type === "image" ||
+    material.file_type === "pdf" ||
+    material.mime_type === "application/pdf"
+  );
+
+  // Context menu content
+  const contextMenuContent = (
+    <ContextMenuContent className="bg-popover w-52">
+      {canPreview && (
+        <>
+          <ContextMenuItem onClick={() => onPreview(material)}>
+            <Eye className="mr-2 h-4 w-4" />
+            预览
+          </ContextMenuItem>
+          <ContextMenuSeparator />
+        </>
+      )}
+      <ContextMenuItem onClick={handleOpen}>
+        <ExternalLink className="mr-2 h-4 w-4" />
+        打开
+      </ContextMenuItem>
+      <ContextMenuItem onClick={handleDownload}>
+        <Download className="mr-2 h-4 w-4" />
+        下载
+      </ContextMenuItem>
+      <ContextMenuSeparator />
+      {onEdit && (
+        <ContextMenuItem onClick={() => onEdit(material)}>
+          <Pencil className="mr-2 h-4 w-4" />
+          编辑
+        </ContextMenuItem>
+      )}
+      <ContextMenuItem
+        className="text-destructive"
+        onClick={() => onDelete(material.id, material.file_path)}
+      >
+        <Trash2 className="mr-2 h-4 w-4" />
+        删除
+      </ContextMenuItem>
+    </ContextMenuContent>
+  );
+
   return (
-    <Card className="group relative rounded-2xl bg-card border border-border/50 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+    <ContextMenu>
+      <ContextMenuTrigger>
+        <Card className="group relative rounded-2xl bg-card border border-border/50 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
       {/* Hover Gradient Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       
@@ -237,5 +289,8 @@ export function MaterialCard({ material, onDelete, onEdit, onPreview }: Material
         </div>
       </CardContent>
     </Card>
+      </ContextMenuTrigger>
+      {contextMenuContent}
+    </ContextMenu>
   );
 }
