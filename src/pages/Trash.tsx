@@ -179,11 +179,21 @@ export default function Trash() {
                 : '';
 
               return (
-                <div key={material.id} className="relative group">
+                <div 
+                  key={material.id} 
+                  className="relative group"
+                  onContextMenu={(e) => {
+                    // 让右键事件传递到 MaterialCard 的 ContextMenu
+                  }}
+                >
                   <Checkbox
                     className="absolute top-3 left-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity data-[state=checked]:opacity-100 bg-background border-2"
                     checked={selectedMaterialIds.includes(material.id)}
                     onCheckedChange={() => toggleMaterialSelection(material.id)}
+                    onContextMenu={(e) => {
+                      // Checkbox 上右键时阻止默认菜单
+                      e.preventDefault();
+                    }}
                   />
                   <div className="relative">
                     <MaterialCard
@@ -192,7 +202,13 @@ export default function Trash() {
                       onEdit={() => {}}
                       onPreview={setPreviewMaterial}
                     />
-                    <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px] rounded-lg pointer-events-none" />
+                    <div 
+                      className="absolute inset-0 bg-background/60 backdrop-blur-[1px] rounded-lg pointer-events-none"
+                      onContextMenu={(e) => {
+                        // 遮罩层不阻止右键事件
+                        e.stopPropagation();
+                      }}
+                    />
                     <div className="absolute top-2 right-2 flex gap-2">
                       <Badge variant="secondary" className="text-xs">
                         {deletedAgo}

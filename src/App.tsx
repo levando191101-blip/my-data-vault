@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -52,26 +53,43 @@ function AppRoutes() {
   );
 }
 
-const App = () => (
-  <ThemeProvider 
-    attribute="class" 
-    defaultTheme="system" 
-    enableSystem
-    enableColorScheme
-    disableTransitionOnChange={false}
-  >
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthProvider>
-            <AppRoutes />
-          </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </ThemeProvider>
-);
+const App = () => {
+  // 全局禁用浏览器默认右键菜单，让自定义 ContextMenu 生效
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      // 检查是否在自定义 ContextMenu 组件内
+      const target = e.target as HTMLElement;
+      if (target.closest('[data-radix-context-menu-trigger]') || 
+          target.closest('[role="dialog"]')) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('contextmenu', handleContextMenu);
+    return () => document.removeEventListener('contextmenu', handleContextMenu);
+  }, []);
+
+  return (
+    <ThemeProvider 
+      attribute="class" 
+      defaultTheme="system" 
+      enableSystem
+      enableColorScheme
+      disableTransitionOnChange={false}
+    >
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AuthProvider>
+              <AppRoutes />
+            </AuthProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
+  );
+};
 
 export default App;
