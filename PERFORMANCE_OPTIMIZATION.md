@@ -117,14 +117,98 @@ const { data: materials = [] } = useQuery({
 
 ---
 
+## 🚀 **阶段二：进一步优化**（✅ 已完成）
+
+### **问题分析**（基于实际测量）
+
+从 Network 监控数据显示：
+- ✅ `get_materials_with_tags`: **558ms**（已优化）
+- ⚠️ `categories`: **748ms**（比 materials 还慢！）
+- ✅ `tags`: 283ms
+
+**瓶颈**：Categories 查询成为新的性能瓶颈！
+
+### **优化方案**
+
+#### **1. Categories 查询优化**
+
+**文件**: `supabase/migrations/20251214_create_get_categories_optimized.sql`
+
+```sql
+-- 添加索引加速查询
+CREATE INDEX IF NOT EXISTS idx_categories_user_id ON categories(user_id);
+CREATE INDEX IF NOT EXISTS idx_categories_parent_id ON categories(parent_id);
+
+-- 创建优化的 RPC 函数
+CREATE OR REPLACE FUNCTION get_user_categories(user_id_param UUID)
+RETURNS SETOF categories
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT *
+  FROM categories
+  WHERE user_id = user_id_param
+  ORDER BY parent_id NULLS FIRST, name ASC;
+$$;
+```
+
+**优势**：
+- ✅ 使用索引加速 WHERE 查询
+- ✅ `STABLE` 标记允许 PostgreSQL 优化
+- ✅ 服务器端排序比前端快
+
+#### **2. 修改 useCategories.tsx**
+
+**文件**: `src/hooks/useCategories.tsx`
+
+```typescript
+// ✅ 使用 RPC 函数
+const fetchCategoriesData = async (userId: string): Promise<Category[]> => {
+  const { data, error } = await supabase
+    .rpc('get_user_categories', { user_id_param: userId });
+  
+  return (data as unknown as Category[]) || [];
+};
+
+// ✅ 添加缓存优化
+const { data: categories = [] } = useQuery({
+  queryKey: ["categories", user?.id],
+  queryFn: () => fetchCategoriesData(user!.id),
+  staleTime: 2 * 60 * 1000,
+  gcTime: 10 * 60 * 1000,
+  refetchOnWindowFocus: false,
+  refetchOnMount: false,
+  placeholderData: (previousData) => previousData,
+});
+```
+
+**预期提升**：
+- 原方案：直接查询表 + 前端排序
+- 新方案：索引 + RPC + 服务器端排序
+- **预期：748ms → < 200ms（73% ↓）**
+
+---
+
 ## 📊 **性能对比**
 
-| 指标 | 优化前 | 优化后 | 提升 |
-|------|--------|--------|------|
+### **阶段一优化结果**
+
+| 指标 | 优化前 | 阶段一后 | 提升 |
+|------|--------|----------|------|
 | **查询次数** | 3次 | 1次 | 66% ↓ |
 | **前端计算** | O(N*M) | O(1) | 100% ↓ |
-| **加载时间** | 2-4秒 | < 500ms | 75-87% ↓ |
+| **Materials加载** | 2-4秒 | **558ms** | 75-87% ↓ |
+| **Categories加载** | N/A | **748ms** | - |
 | **用户体验** | 白屏等待 | 立即显示 | ⭐⭐⭐⭐⭐ |
+
+### **阶段二优化目标**
+
+| 指标 | 阶段一 | 阶段二目标 | 预期提升 |
+|------|--------|-----------|---------|
+| **Materials加载** | 558ms | **< 200ms** | 64% ↓ |
+| **Categories加载** | 748ms | **< 200ms** | 73% ↓ |
+| **总加载时间** | ~1.3秒 | **< 400ms** | 69% ↓ |
 
 ---
 

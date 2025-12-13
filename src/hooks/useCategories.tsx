@@ -12,13 +12,16 @@ export interface Category {
   updated_at: string;
 }
 
-const fetchCategoriesData = async (): Promise<Category[]> => {
+/**
+ * 高性能 categories 查询
+ * 使用 RPC 函数和索引优化
+ */
+const fetchCategoriesData = async (userId: string): Promise<Category[]> => {
   const { data, error } = await supabase
-    .from("categories" as any)
-    .select("*")
-    .order("name");
+    .rpc('get_user_categories', { user_id_param: userId });
 
   if (error) {
+    console.error('Failed to fetch categories:', error);
     throw new Error(error.message);
   }
 
@@ -32,10 +35,13 @@ export function useCategories() {
 
   const { data: categories = [], isLoading: loading, refetch } = useQuery({
     queryKey: ["categories", user?.id],
-    queryFn: fetchCategoriesData,
+    queryFn: () => fetchCategoriesData(user!.id),
     enabled: !!user,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    placeholderData: (previousData) => previousData, // 显示旧数据避免闪烁
   });
 
   const createMutation = useMutation({
