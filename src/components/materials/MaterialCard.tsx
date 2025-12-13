@@ -130,8 +130,30 @@ export function MaterialCard({ material, onDelete, onEdit, onPreview }: Material
   const canPreview = onPreview && (
     material.file_type === "image" ||
     material.file_type === "pdf" ||
-    material.mime_type === "application/pdf"
+    material.mime_type === "application/pdf" ||
+    material.file_type === "video" ||
+    material.mime_type?.startsWith("video/")
   );
+
+  // 单击处理：预览或打开
+  const handleCardClick = (e: React.MouseEvent) => {
+    // 避免触发子元素的点击事件（如按钮、菜单等）
+    if ((e.target as HTMLElement).closest('button, a, [role="menuitem"]')) {
+      return;
+    }
+
+    if (canPreview && onPreview) {
+      onPreview(material);
+    } else {
+      handleOpen();
+    }
+  };
+
+  // 双击处理：始终在新标签页打开
+  const handleCardDoubleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    handleOpen();
+  };
 
   // Context menu content
   const contextMenuContent = (
@@ -173,7 +195,11 @@ export function MaterialCard({ material, onDelete, onEdit, onPreview }: Material
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        <Card className="group relative rounded-2xl bg-card border border-border/50 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+        <Card 
+          className="group relative rounded-2xl bg-card border border-border/50 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden cursor-pointer"
+          onClick={handleCardClick}
+          onDoubleClick={handleCardDoubleClick}
+        >
       {/* Hover Gradient Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       
@@ -223,8 +249,8 @@ export function MaterialCard({ material, onDelete, onEdit, onPreview }: Material
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  {onPreview && (material.file_type === "image" || material.file_type === "pdf" || material.mime_type === "application/pdf") && (
-                    <DropdownMenuItem onClick={() => onPreview(material)}>
+                  {canPreview && (
+                    <DropdownMenuItem onClick={() => onPreview!(material)}>
                       <Eye className="mr-2 h-4 w-4" />
                       预览
                     </DropdownMenuItem>
