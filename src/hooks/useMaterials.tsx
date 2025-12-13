@@ -71,8 +71,10 @@ export function useMaterials() {
     queryKey: ["materials", user?.id],
     queryFn: () => fetchMaterialsData(user!.id),
     enabled: !!user,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes (formerly cacheTime)
+    staleTime: 2 * 60 * 1000, // 2 minutes - 保持数据较新
+    gcTime: 10 * 60 * 1000, // 10 minutes - 减少内存占用
+    refetchOnWindowFocus: false, // 避免窗口切换时重新获取
+    refetchOnMount: false, // 利用缓存，仅在数据过期时重新获取
   });
 
   const deleteMutation = useMutation({
