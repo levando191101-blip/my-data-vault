@@ -151,19 +151,24 @@ export function DraggableMaterialCard({
   };
 
   const handleDownload = async () => {
+    // 使用 download 选项强制浏览器下载，避免导航
     const { data, error } = await supabase.storage
       .from("materials")
-      .createSignedUrl(material.file_path, 3600); // 1 hour expiry
+      .createSignedUrl(material.file_path, 3600, {
+        download: material.file_name, // 强制 Content-Disposition: attachment
+      });
 
     if (error || !data?.signedUrl) {
       console.error("Failed to get signed URL:", error);
       return;
     }
 
+    // 使用 window.open 在新标签页下载，避免影响当前页面
     const link = document.createElement("a");
     link.href = data.signedUrl;
     link.download = material.file_name;
-    link.style.display = "none";
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
     document.body.appendChild(link);
     link.click();
     setTimeout(() => document.body.removeChild(link), 100);
@@ -212,8 +217,31 @@ export function DraggableMaterialCard({
   const canPreview = onPreview && (
     material.file_type === "image" ||
     material.file_type === "pdf" ||
-    material.mime_type === "application/pdf"
+    material.mime_type === "application/pdf" ||
+    material.file_type === "video" ||
+    material.mime_type?.startsWith("video/")
   );
+
+  // 双击打开/预览
+  const handleCardDoubleClick = (e: React.MouseEvent) => {
+    // 避免在编辑模式下触发
+    if (isEditing) return;
+    
+    // 避免触发子元素的双击事件
+    if ((e.target as HTMLElement).closest('button, [role="checkbox"]')) {
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    // 如果可预览，打开预览；否则在新标签页打开
+    if (canPreview && onPreview) {
+      onPreview(material);
+    } else {
+      handleOpen();
+    }
+  };
 
   // 是否显示批量操作菜单（选中状态 && 选中数量 > 1）
   const showBatchMenu = isSelected && selectedCount > 1;
@@ -374,11 +402,21 @@ export function DraggableMaterialCard({
             )}
             data-selectable-item
             data-item-id={`material-${material.id}`}
-            onClick={() => {
-              if (selectionMode && onSelect) {
+            onClick={(e) => {
+              // 避免在编辑模式下触发
+              if (isEditing) return;
+              
+              // 避免触发子元素的点击事件
+              if ((e.target as HTMLElement).closest('button, [role="checkbox"]')) {
+                return;
+              }
+
+              // 单击：切换选择状态（即使非选择模式也支持）
+              if (onSelect) {
                 onSelect(material.id, !isSelected);
               }
             }}
+            onDoubleClick={handleCardDoubleClick}
           >
             <CardContent className="p-4">
               {isEditing ? (
@@ -464,14 +502,7 @@ export function DraggableMaterialCard({
 
                   {/* Content */}
                   <div className="flex-1 min-w-0 space-y-1">
-                    <h3
-                      className="font-medium truncate hover:text-primary transition-colors"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleStartEdit();
-                      }}
-                      title="点击编辑"
-                    >
+                    <h3 className="font-medium truncate">
                       {material.title}
                     </h3>
                     <p className="text-sm text-muted-foreground truncate">

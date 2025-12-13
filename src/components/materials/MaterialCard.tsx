@@ -87,9 +87,12 @@ export function MaterialCard({ material, onDelete, onEdit, onPreview }: Material
     e?.preventDefault();
     e?.stopPropagation();
     
+    // 使用 download 选项强制浏览器下载，避免导航
     const { data, error } = await supabase.storage
       .from("materials")
-      .createSignedUrl(material.file_path, 3600); // 1 hour expiry
+      .createSignedUrl(material.file_path, 3600, {
+        download: material.file_name, // 强制 Content-Disposition: attachment
+      });
 
     if (error || !data?.signedUrl) {
       toast({
@@ -107,7 +110,7 @@ export function MaterialCard({ material, onDelete, onEdit, onPreview }: Material
     link.rel = "noopener noreferrer";
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
+    setTimeout(() => document.body.removeChild(link), 100);
   };
 
   const handleOpen = async () => {
