@@ -2092,7 +2092,12 @@ export function FileExplorer({
                           onSelect={handleSelectMaterial}
                           selectedCount={selectedMaterials.size}
                           onBatchDownload={handleBatchDownload}
-                          onBatchMove={() => setBatchMoveDialogOpen(true)}
+                          onBatchMove={() => {
+                            setDialogType("batch-move");
+                            setBatchMoveType("files");
+                            setBatchMoveCategoryId("none");
+                            setDialogOpen(true);
+                          }}
                           onBatchTags={() => setBatchTagsDialogOpen(true)}
                           onBatchDelete={handleBatchDeleteMaterials}
                         />
