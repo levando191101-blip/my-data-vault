@@ -251,6 +251,26 @@ export type Database = {
     }
     Functions: {
       auto_cleanup_trash: { Args: never; Returns: undefined }
+      get_materials_with_tags: {
+        Args: { user_id_param: string }
+        Returns: {
+          category_id: string
+          created_at: string
+          deleted_at: string
+          description: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id: string
+          mime_type: string
+          sort_order: number
+          tags: Json
+          title: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
