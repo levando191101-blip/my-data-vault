@@ -3,7 +3,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Search as SearchIcon, X, ArrowUpDown, LayoutGrid, List, Filter, Clock, Trash2 } from 'lucide-react';
 import { useMaterials, Material } from '@/hooks/useMaterials';
 import { useTags } from '@/hooks/useTags';
@@ -522,30 +521,13 @@ export default function Search() {
               : "space-y-2"
           )}>
             {searchResults.map((material) => (
-              <div 
-                key={material.id} 
-                className="relative group"
-                onContextMenu={(e) => {
-                  // 让右键事件传递到 MaterialCard 的 ContextMenu
-                  // 不阻止冒泡，让 ContextMenu 能正常工作
-                }}
-              >
-                <Checkbox
-                  className="absolute top-3 left-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity data-[state=checked]:opacity-100 bg-background border-2"
-                  checked={selectedMaterialIds.includes(material.id)}
-                  onCheckedChange={() => toggleMaterialSelection(material.id)}
-                  onContextMenu={(e) => {
-                    // Checkbox 上右键时阻止默认菜单，但让事件继续传递
-                    e.preventDefault();
-                  }}
-                />
-                <MaterialCard
-                  material={material}
-                  onDelete={(id, filePath) => setDeleteId({ id, filePath })}
-                  onEdit={setEditingMaterial}
-                  onPreview={setPreviewMaterial}
-                />
-              </div>
+              <MaterialCard
+                key={material.id}
+                material={material}
+                onDelete={(id, filePath) => setDeleteId({ id, filePath })}
+                onEdit={setEditingMaterial}
+                onPreview={setPreviewMaterial}
+              />
             ))}
           </div>
         </div>
