@@ -271,6 +271,23 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_user_categories: {
+        Args: { user_id_param: string }
+        Returns: {
+          created_at: string
+          id: string
+          name: string
+          parent_id: string | null
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "categories"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
     }
     Enums: {
       [_ in never]: never
