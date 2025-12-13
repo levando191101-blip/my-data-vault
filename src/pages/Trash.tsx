@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import {
   Trash2,
@@ -181,59 +180,43 @@ export default function Trash() {
               return (
                 <div 
                   key={material.id} 
-                  className="relative group"
-                  onContextMenu={(e) => {
-                    // 让右键事件传递到 MaterialCard 的 ContextMenu
-                  }}
+                  className="space-y-2"
                 >
-                  <Checkbox
-                    className="absolute top-3 left-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity data-[state=checked]:opacity-100 bg-background border-2"
-                    checked={selectedMaterialIds.includes(material.id)}
-                    onCheckedChange={() => toggleMaterialSelection(material.id)}
-                    onContextMenu={(e) => {
-                      // Checkbox 上右键时阻止默认菜单
-                      e.preventDefault();
+                  <MaterialCard
+                    material={material}
+                    onDelete={() => {
+                      // 回收站中不显示删除选项
                     }}
+                    onEdit={() => {
+                      // 回收站中不能编辑
+                    }}
+                    onPreview={setPreviewMaterial}
                   />
-                  <div className="relative">
-                    <MaterialCard
-                      material={material}
-                      onDelete={() => {}}
-                      onEdit={() => {}}
-                      onPreview={setPreviewMaterial}
-                    />
-                    <div 
-                      className="absolute inset-0 bg-background/60 backdrop-blur-[1px] rounded-lg pointer-events-none"
-                      onContextMenu={(e) => {
-                        // 遮罩层不阻止右键事件
-                        e.stopPropagation();
-                      }}
-                    />
-                    <div className="absolute top-2 right-2 flex gap-2">
-                      <Badge variant="secondary" className="text-xs">
-                        {deletedAgo}
-                      </Badge>
-                    </div>
-                    <div className="absolute bottom-2 right-2 left-2 flex gap-2 pointer-events-auto">
+                  <div className="flex items-center justify-between px-2">
+                    <Badge variant="secondary" className="text-xs">
+                      {deletedAgo}
+                    </Badge>
+                    <div className="flex gap-2">
                       <Button
-                        variant="secondary"
+                        variant="outline"
                         size="sm"
                         onClick={() => handleRestore([material.id])}
-                        className="flex-1 gap-1 bg-green-500/80 hover:bg-green-500 text-white"
+                        className="gap-1 hover:bg-green-500 hover:text-white hover:border-green-500"
                       >
                         <RotateCcw className="h-3 w-3" />
                         恢复
                       </Button>
                       <Button
-                        variant="secondary"
+                        variant="outline"
                         size="sm"
                         onClick={() => {
                           setSelectedMaterialIds([material.id]);
                           setPermanentDeleteDialogOpen(true);
                         }}
-                        className="gap-1 bg-destructive/80 hover:bg-destructive text-white"
+                        className="gap-1 hover:bg-destructive hover:text-white hover:border-destructive"
                       >
                         <Trash2 className="h-3 w-3" />
+                        永久删除
                       </Button>
                     </div>
                   </div>
