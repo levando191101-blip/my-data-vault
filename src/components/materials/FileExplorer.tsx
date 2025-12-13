@@ -546,11 +546,22 @@ function DraggableFolderCard({
               isSelected && "ring-2 ring-primary bg-primary/5",
               isPendingSelection && !isSelected && "ring-2 ring-primary/50 bg-primary/10"
             )}
-            onDoubleClick={onClick}
-            onClick={() => {
+            onClick={(e) => {
+              // 避免触发子元素的点击事件（如按钮、拖拽手柄等）
+              if ((e.target as HTMLElement).closest('button, [role="checkbox"]')) {
+                return;
+              }
               if (selectionMode && onSelect) {
                 onSelect(category.id, !isSelected);
+              } else {
+                // 非选择模式：单击打开文件夹
+                onClick();
               }
+            }}
+            onDoubleClick={(e) => {
+              // 双击：始终打开文件夹
+              e.preventDefault();
+              onClick();
             }}
           >
             <CardContent className="p-3 flex items-center gap-3">
@@ -583,16 +594,10 @@ function DraggableFolderCard({
                   <GripVertical className="h-4 w-4 text-muted-foreground" />
                 </button>
               )}
-              <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 cursor-pointer"
-                onClick={onClick}
-              >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                 <Folder className="h-5 w-5 text-primary" />
               </div>
-              <span
-                className="text-sm font-medium cursor-pointer flex-1"
-                onClick={onClick}
-              >
+              <span className="text-sm font-medium flex-1">
                 {category.name}
               </span>
             </CardContent>
@@ -621,11 +626,22 @@ function DraggableFolderCard({
             isSelected && "ring-2 ring-primary bg-primary/5",
             isPendingSelection && !isSelected && "ring-2 ring-primary/50 bg-primary/10"
           )}
-          onDoubleClick={onClick}
-          onClick={() => {
+          onClick={(e) => {
+            // 避免触发子元素的点击事件（如按钮、拖拽手柄等）
+            if ((e.target as HTMLElement).closest('button, [role="checkbox"]')) {
+              return;
+            }
             if (selectionMode && onSelect) {
               onSelect(category.id, !isSelected);
+            } else {
+              // 非选择模式：单击打开文件夹
+              onClick();
             }
+          }}
+          onDoubleClick={(e) => {
+            // 双击：始终打开文件夹
+            e.preventDefault();
+            onClick();
           }}
         >
           <CardContent className="p-3 flex items-center gap-3">
@@ -658,16 +674,12 @@ function DraggableFolderCard({
                 <GripVertical className="h-4 w-4 text-muted-foreground" />
               </button>
             )}
-            <div
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 cursor-pointer"
-              onClick={onClick}
-            >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
               <Folder className="h-5 w-5 text-primary" />
             </div>
             <span
-              className="text-sm font-medium cursor-pointer truncate flex-1 min-w-0"
+              className="text-sm font-medium truncate flex-1 min-w-0"
               title={category.name}
-              onClick={onClick}
             >
               {category.name}
             </span>
