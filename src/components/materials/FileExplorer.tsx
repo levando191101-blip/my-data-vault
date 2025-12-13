@@ -2090,6 +2090,11 @@ export function FileExplorer({
                           isSelected={selectedMaterials.has(material.id)}
                           isPendingSelection={pendingSelectedIds.has(`material-${material.id}`)}
                           onSelect={handleSelectMaterial}
+                          selectedCount={selectedMaterials.size}
+                          onBatchDownload={handleBatchDownload}
+                          onBatchMove={() => setBatchMoveDialogOpen(true)}
+                          onBatchTags={() => setBatchTagsDialogOpen(true)}
+                          onBatchDelete={handleBatchDeleteMaterials}
                         />
                       ))}
                     </div>

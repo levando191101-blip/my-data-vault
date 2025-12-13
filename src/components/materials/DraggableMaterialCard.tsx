@@ -41,6 +41,7 @@ import {
   FolderSymlink,
   Copy,
   Share2,
+  Tags,
 } from "lucide-react";
 import { Material } from "@/hooks/useMaterials";
 import { supabase } from "@/integrations/supabase/client";
@@ -61,6 +62,12 @@ interface DraggableMaterialCardProps {
   isPendingSelection?: boolean;
   onSelect?: (id: string, selected: boolean) => void;
   selectionMode?: boolean;
+  // 批量操作相关
+  selectedCount?: number;
+  onBatchDownload?: () => void;
+  onBatchMove?: () => void;
+  onBatchTags?: () => void;
+  onBatchDelete?: () => void;
 }
 
 const getFileIcon = (fileType: string) => {
@@ -117,6 +124,11 @@ export function DraggableMaterialCard({
   isPendingSelection = false,
   onSelect,
   selectionMode = false,
+  selectedCount = 0,
+  onBatchDownload,
+  onBatchMove,
+  onBatchTags,
+  onBatchDelete,
 }: DraggableMaterialCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(material.title);
@@ -203,8 +215,51 @@ export function DraggableMaterialCard({
     material.mime_type === "application/pdf"
   );
 
-  // Context menu content
-  const contextMenuContent = (
+  // 是否显示批量操作菜单（选中状态 && 选中数量 > 1）
+  const showBatchMenu = isSelected && selectedCount > 1;
+
+  // 批量操作菜单
+  const batchContextMenuContent = (
+    <ContextMenuContent className="bg-popover w-52">
+      <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+        已选择 {selectedCount} 项
+      </div>
+      <ContextMenuSeparator />
+      {onBatchDownload && (
+        <ContextMenuItem onClick={onBatchDownload}>
+          <Download className="mr-2 h-4 w-4" />
+          批量下载
+        </ContextMenuItem>
+      )}
+      {onBatchMove && (
+        <ContextMenuItem onClick={onBatchMove}>
+          <FolderSymlink className="mr-2 h-4 w-4" />
+          批量移动
+        </ContextMenuItem>
+      )}
+      {onBatchTags && (
+        <ContextMenuItem onClick={onBatchTags}>
+          <Tags className="mr-2 h-4 w-4" />
+          批量标签
+        </ContextMenuItem>
+      )}
+      {onBatchDelete && (
+        <>
+          <ContextMenuSeparator />
+          <ContextMenuItem 
+            className="text-destructive"
+            onClick={onBatchDelete}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            批量删除
+          </ContextMenuItem>
+        </>
+      )}
+    </ContextMenuContent>
+  );
+
+  // 单个文件操作菜单
+  const singleContextMenuContent = (
     <ContextMenuContent className="bg-popover w-52">
       {canPreview && (
         <>
@@ -453,7 +508,7 @@ export function DraggableMaterialCard({
             </CardContent>
           </Card>
         </ContextMenuTrigger>
-        {contextMenuContent}
+        {showBatchMenu ? batchContextMenuContent : singleContextMenuContent}
       </ContextMenu>
     </div>
   );
