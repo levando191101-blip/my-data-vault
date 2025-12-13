@@ -3,6 +3,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   Table,
   TableBody,
@@ -21,10 +30,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Copy, Trash2, Eye, Download, Lock, Clock, ExternalLink } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Copy, Trash2, Eye, Download, Lock, Clock, ExternalLink, Pencil, CalendarIcon, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 interface Share {
   id: string;
@@ -49,6 +67,16 @@ export function ShareManager() {
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [shareToDelete, setShareToDelete] = useState<string | null>(null);
+  
+  // Edit dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingShare, setEditingShare] = useState<Share | null>(null);
+  const [editPassword, setEditPassword] = useState('');
+  const [editExpiresAt, setEditExpiresAt] = useState<Date | undefined>(undefined);
+  const [editMaxDownloads, setEditMaxDownloads] = useState<string>('');
+  const [editAllowPreview, setEditAllowPreview] = useState(true);
+  const [editAllowDownload, setEditAllowDownload] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -127,6 +155,60 @@ export function ShareManager() {
     } finally {
       setDeleteDialogOpen(false);
       setShareToDelete(null);
+    }
+  };
+
+  const openEditDialog = (share: Share) => {
+    setEditingShare(share);
+    setEditPassword(share.password || '');
+    setEditExpiresAt(share.expires_at ? new Date(share.expires_at) : undefined);
+    setEditMaxDownloads(share.max_downloads?.toString() || '');
+    setEditAllowPreview(share.allow_preview ?? true);
+    setEditAllowDownload(share.allow_download ?? true);
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingShare) return;
+
+    setSaving(true);
+    try {
+      const updateData: {
+        password: string | null;
+        expires_at: string | null;
+        max_downloads: number | null;
+        allow_preview: boolean;
+        allow_download: boolean;
+      } = {
+        password: editPassword || null,
+        expires_at: editExpiresAt ? editExpiresAt.toISOString() : null,
+        max_downloads: editMaxDownloads ? parseInt(editMaxDownloads) : null,
+        allow_preview: editAllowPreview,
+        allow_download: editAllowDownload,
+      };
+
+      const { error } = await supabase
+        .from('shares')
+        .update(updateData)
+        .eq('id', editingShare.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setShares(shares.map(s => 
+        s.id === editingShare.id 
+          ? { ...s, ...updateData }
+          : s
+      ));
+
+      toast.success('分享设置已更新');
+      setEditDialogOpen(false);
+      setEditingShare(null);
+    } catch (error) {
+      console.error('Failed to update share:', error);
+      toast.error('更新分享设置失败');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -257,6 +339,14 @@ export function ShareManager() {
                     <Button
                       variant="ghost"
                       size="icon"
+                      onClick={() => openEditDialog(share)}
+                      title="编辑设置"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => confirmDelete(share.id)}
                       title="删除分享"
                       className="text-destructive hover:text-destructive"
@@ -271,6 +361,7 @@ export function ShareManager() {
         </TableBody>
       </Table>
 
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -285,6 +376,145 @@ export function ShareManager() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Share Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>编辑分享设置</DialogTitle>
+            <DialogDescription>
+              修改分享链接的密码、过期时间等设置
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Password */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-password">访问密码</Label>
+              <div className="relative">
+                <Input
+                  id="edit-password"
+                  type="text"
+                  placeholder="留空表示无密码"
+                  value={editPassword}
+                  onChange={(e) => setEditPassword(e.target.value)}
+                />
+                {editPassword && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                    onClick={() => setEditPassword('')}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Expiration Date */}
+            <div className="space-y-2">
+              <Label>过期时间</Label>
+              <div className="flex items-center gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "flex-1 justify-start text-left font-normal",
+                        !editExpiresAt && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {editExpiresAt 
+                        ? format(editExpiresAt, 'yyyy年MM月dd日', { locale: zhCN })
+                        : '永不过期'
+                      }
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={editExpiresAt}
+                      onSelect={setEditExpiresAt}
+                      disabled={(date) => date < new Date()}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                {editExpiresAt && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setEditExpiresAt(undefined)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Max Downloads */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-max-downloads">最大下载次数</Label>
+              <div className="relative">
+                <Input
+                  id="edit-max-downloads"
+                  type="number"
+                  min="1"
+                  placeholder="留空表示不限制"
+                  value={editMaxDownloads}
+                  onChange={(e) => setEditMaxDownloads(e.target.value)}
+                />
+                {editMaxDownloads && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                    onClick={() => setEditMaxDownloads('')}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Permissions */}
+            <div className="space-y-3">
+              <Label>权限设置</Label>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Eye className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">允许预览</span>
+                </div>
+                <Switch
+                  checked={editAllowPreview}
+                  onCheckedChange={setEditAllowPreview}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Download className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">允许下载</span>
+                </div>
+                <Switch
+                  checked={editAllowDownload}
+                  onCheckedChange={setEditAllowDownload}
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              取消
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={saving}>
+              {saving ? '保存中...' : '保存'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
