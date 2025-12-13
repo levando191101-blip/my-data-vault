@@ -38,11 +38,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Copy, Trash2, Eye, Download, Lock, Clock, ExternalLink, Pencil, CalendarIcon, X } from 'lucide-react';
+import { Copy, Trash2, Eye, Download, Lock, Clock, ExternalLink, Pencil, CalendarIcon, X, QrCode } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface Share {
   id: string;
@@ -77,6 +78,10 @@ export function ShareManager() {
   const [editAllowPreview, setEditAllowPreview] = useState(true);
   const [editAllowDownload, setEditAllowDownload] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // QR Code dialog state
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const [qrShareCode, setQrShareCode] = useState<string>('');
 
   useEffect(() => {
     if (user) {
@@ -166,6 +171,15 @@ export function ShareManager() {
     setEditAllowPreview(share.allow_preview ?? true);
     setEditAllowDownload(share.allow_download ?? true);
     setEditDialogOpen(true);
+  };
+
+  const openQrDialog = (shareCode: string) => {
+    setQrShareCode(shareCode);
+    setQrDialogOpen(true);
+  };
+
+  const getShareUrl = (shareCode: string) => {
+    return `${window.location.origin}/share/${shareCode}`;
   };
 
   const handleSaveEdit = async () => {
@@ -335,6 +349,14 @@ export function ShareManager() {
                       title="复制链接"
                     >
                       <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => openQrDialog(share.share_code)}
+                      title="显示二维码"
+                    >
+                      <QrCode className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -513,6 +535,40 @@ export function ShareManager() {
               {saving ? '保存中...' : '保存'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* QR Code Dialog */}
+      <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>分享二维码</DialogTitle>
+            <DialogDescription>
+              使用手机扫描二维码访问分享内容
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-6">
+            <div className="bg-white p-4 rounded-lg">
+              <QRCodeSVG 
+                value={getShareUrl(qrShareCode)} 
+                size={200}
+                level="M"
+              />
+            </div>
+            <div className="text-center space-y-2">
+              <p className="text-sm text-muted-foreground break-all px-4">
+                {getShareUrl(qrShareCode)}
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => copyShareLink(qrShareCode)}
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                复制链接
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
