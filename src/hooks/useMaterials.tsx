@@ -21,45 +21,31 @@ export interface Material {
   tags?: { id: string; name: string; color: string }[];
 }
 
+/**
+ * 高性能数据获取函数
+ * 
+ * 使用 Supabase RPC 函数一次性获取所有数据，避免 N+1 查询问题
+ * 
+ * 性能提升：
+ * - 原方案：3次查询 + O(N*M) 前端计算
+ * - 新方案：1次 RPC 调用，数据库端聚合
+ * - 预期提速：2-4秒 → < 500ms
+ */
 const fetchMaterialsData = async (userId: string): Promise<Material[]> => {
-  // Fetch materials (exclude deleted ones)
-  const { data: materialsData, error: materialsError } = await supabase
-    .from("materials")
-    .select("*")
-    .is("deleted_at", null)
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: false });
+  // 调用 Supabase RPC 函数，一次性获取 materials 及其 tags
+  const { data, error } = await supabase
+    .rpc('get_materials_with_tags', { user_id_param: userId });
 
-  if (materialsError) {
-    throw new Error(materialsError.message);
+  if (error) {
+    console.error('Failed to fetch materials:', error);
+    throw new Error(error.message);
   }
 
-  // Fetch material tags
-  const { data: materialTagsData } = await supabase
-    .from("material_tags" as any)
-    .select("material_id, tag_id");
-
-  // Fetch all tags
-  const { data: tagsData } = await supabase
-    .from("tags" as any)
-    .select("id, name, color");
-
-  const tagsMap = new Map((tagsData as any[] || []).map((tag: any) => [tag.id, tag]));
-
-  // Map tags to materials
-  const materialsWithTags = (materialsData || []).map((material) => {
-    const materialTags = (materialTagsData as any[] || [])
-      .filter((mt: any) => mt.material_id === material.id)
-      .map((mt: any) => tagsMap.get(mt.tag_id))
-      .filter(Boolean);
-
-    return {
-      ...material,
-      tags: materialTags,
-    };
-  });
-
-  return materialsWithTags;
+  // 数据已在数据库层完成聚合，直接返回
+  return (data || []).map((material: any) => ({
+    ...material,
+    tags: material.tags || [],
+  }));
 };
 
 export function useMaterials() {
@@ -75,6 +61,7 @@ export function useMaterials() {
     gcTime: 10 * 60 * 1000, // 10 minutes - 减少内存占用
     refetchOnWindowFocus: false, // 避免窗口切换时重新获取
     refetchOnMount: false, // 利用缓存，仅在数据过期时重新获取
+    placeholderData: (previousData) => previousData, // 显示旧数据避免闪烁
   });
 
   const deleteMutation = useMutation({
