@@ -559,7 +559,7 @@ function DraggableFolderCard({
               }
             }}
             onDoubleClick={(e) => {
-              // 双击：始终打开文件夹
+              // 双击：打开文件夹（在当前页面中导航）
               e.preventDefault();
               onClick();
             }}
@@ -639,7 +639,7 @@ function DraggableFolderCard({
             }
           }}
           onDoubleClick={(e) => {
-            // 双击：始终打开文件夹
+            // 双击：打开文件夹（在当前页面中导航）
             e.preventDefault();
             onClick();
           }}
@@ -826,9 +826,8 @@ export function FileExplorer({
       }
     });
 
-    if (folderIds.size > 0 || materialIds.size > 0) {
-      setSelectionMode(true);
-    }
+    // 不自动进入选择模式，让用户保持正常的点击交互
+    // 用户可以通过"选择"按钮手动进入选择模式进行批量操作
     setSelectedFolders(folderIds);
     setSelectedMaterials(materialIds);
   }, []);

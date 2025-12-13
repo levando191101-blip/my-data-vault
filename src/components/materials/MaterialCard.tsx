@@ -138,10 +138,13 @@ export function MaterialCard({ material, onDelete, onEdit, onPreview }: Material
   // 单击处理：预览或打开
   const handleCardClick = (e: React.MouseEvent) => {
     // 避免触发子元素的点击事件（如按钮、菜单等）
-    if ((e.target as HTMLElement).closest('button, a, [role="menuitem"]')) {
+    const target = e.target as HTMLElement;
+    if (target.closest('button, [role="menuitem"], [data-radix-dropdown-menu-trigger]')) {
       return;
     }
 
+    e.stopPropagation();
+    
     if (canPreview && onPreview) {
       onPreview(material);
     } else {
@@ -152,6 +155,7 @@ export function MaterialCard({ material, onDelete, onEdit, onPreview }: Material
   // 双击处理：始终在新标签页打开
   const handleCardDoubleClick = (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     handleOpen();
   };
 
