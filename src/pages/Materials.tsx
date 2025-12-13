@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { FolderOpen, Loader2 } from "lucide-react";
+import { FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useMaterials, Material } from "@/hooks/useMaterials";
 import { useCategories } from "@/hooks/useCategories";
 import { MaterialPreviewDialog } from "@/components/materials/MaterialPreviewDialog";
 import { FileExplorer } from "@/components/materials/FileExplorer";
+import { FileExplorerSkeleton } from "@/components/materials/FileExplorerSkeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,10 +57,19 @@ export default function Materials() {
     return success;
   };
 
-  if (loading) {
+  // 首次加载显示骨架屏，后续加载显示缓存数据
+  const showSkeleton = loading && materials.length === 0;
+
+  if (showSkeleton) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="space-y-4">
+        <div>
+          <h1 className="text-3xl font-bold">我的资料</h1>
+          <p className="text-muted-foreground mt-1">
+            像 Windows 文件管理器一样管理你的学习资料
+          </p>
+        </div>
+        <FileExplorerSkeleton />
       </div>
     );
   }
