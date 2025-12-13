@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useOptimisticMaterials } from "./useOptimisticMaterials";
 
 export interface Material {
   id: string;
@@ -52,6 +53,9 @@ export function useMaterials() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // 乐观更新 Hook
+  const { optimisticDelete, optimisticMove, optimisticUpdate } = useOptimisticMaterials();
 
   const { data: materials = [], isLoading: loading, refetch } = useQuery({
     queryKey: ["materials", user?.id],
@@ -146,21 +150,39 @@ export function useMaterials() {
     },
   });
 
+  /**
+   * 乐观删除：立即从 UI 移除，后台发送请求
+   */
   const deleteMaterial = async (id: string, filePath: string) => {
     try {
-      await deleteMutation.mutateAsync({ id, filePath });
+      await optimisticDelete.mutateAsync({ id, filePath });
       return true;
     } catch {
       return false;
     }
   };
 
+  /**
+   * 乐观更新：立即更新 UI，后台发送请求
+   */
   const updateMaterial = async (
     id: string,
     data: { title: string; categoryId: string | null; tagIds: string[] }
   ) => {
     try {
-      await updateMutation.mutateAsync({ id, data });
+      await optimisticUpdate.mutateAsync({ id, data });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  /**
+   * 乐观移动：立即更新文件所属分类
+   */
+  const moveMaterial = async (materialId: string, categoryId: string | null) => {
+    try {
+      await optimisticMove.mutateAsync({ materialId, categoryId });
       return true;
     } catch {
       return false;
@@ -172,6 +194,7 @@ export function useMaterials() {
     loading,
     deleteMaterial,
     updateMaterial,
+    moveMaterial,
     refetch,
   };
 }
