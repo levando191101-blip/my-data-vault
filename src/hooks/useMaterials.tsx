@@ -33,8 +33,8 @@ export interface Material {
  */
 const fetchMaterialsData = async (userId: string): Promise<Material[]> => {
   // 调用 Supabase RPC 函数，一次性获取 materials 及其 tags
-  const { data, error } = await supabase
-    .rpc('get_materials_with_tags', { user_id_param: userId });
+  // 使用类型断言绕过自动生成类型的限制（函数已在数据库中创建）
+  const { data, error } = await (supabase.rpc as any)('get_materials_with_tags', { user_id_param: userId });
 
   if (error) {
     console.error('Failed to fetch materials:', error);
